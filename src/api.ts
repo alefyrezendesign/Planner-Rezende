@@ -26,7 +26,8 @@ export async function saveTask(userId: string, task: Task) {
     status: task.status,
     estimated_cost: task.estimatedCost,
     saved_amount: task.savedAmount,
-    subtasks: task.subtasks
+    subtasks: task.subtasks,
+    due_date: task.dueDate
   };
   const { data, error } = await supabase.from('tasks').upsert(record).select();
   if (error) throw error;
@@ -52,6 +53,7 @@ export async function saveCar(userId: string, car: CarScenario) {
     id: car.id,
     user_id: userId,
     model_name: car.modelName,
+    image_url: car.imageUrl,
     car_value: car.carValue,
     down_payment_target: car.downPaymentTarget,
     down_payment_saved: car.downPaymentSaved,
@@ -82,6 +84,7 @@ export async function saveHouse(userId: string, house: RealEstateScenario) {
     id: house.id,
     user_id: userId,
     property_name: house.propertyName,
+    image_url: house.imageUrl,
     property_value: house.propertyValue,
     down_payment_target: house.downPaymentTarget,
     down_payment_saved: house.downPaymentSaved,
@@ -112,7 +115,8 @@ function parseTaskRecord(record: any): Task {
     status: record.status,
     estimatedCost: record.estimated_cost,
     savedAmount: record.saved_amount,
-    subtasks: record.subtasks || []
+    subtasks: record.subtasks || [],
+    dueDate: record.due_date
   };
 }
 
@@ -120,6 +124,7 @@ function parseCarRecord(record: any): CarScenario {
   return {
     id: record.id,
     modelName: record.model_name,
+    imageUrl: record.image_url,
     carValue: record.car_value,
     downPaymentTarget: record.down_payment_target,
     downPaymentSaved: record.down_payment_saved,
@@ -132,6 +137,7 @@ function parseHouseRecord(record: any): RealEstateScenario {
   return {
     id: record.id,
     propertyName: record.property_name,
+    imageUrl: record.image_url,
     propertyValue: record.property_value,
     downPaymentTarget: record.down_payment_target,
     downPaymentSaved: record.down_payment_saved,

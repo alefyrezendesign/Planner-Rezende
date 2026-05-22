@@ -64,7 +64,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Auth session error:", error.message);
+        // On invalid refresh token, we should clear the invalid session
+        supabase.auth.signOut();
+      }
       setSession(session);
       setNeedsAuth(!session);
       if (session) {
@@ -76,11 +81,22 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setNeedsAuth(true);
+        setTasks([]);
+        setCars([]);
+        setHouses([]);
+        setIsInitializing(false);
+        return;
+      }
       setSession(session);
       setNeedsAuth(!session);
       if (session) {
         loadData(session.user.id);
+      } else {
+        setIsInitializing(false);
       }
     });
 
@@ -344,19 +360,30 @@ export default function App() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-xl shrink-0">
-              <RezendeLogo className="text-white w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                Planner Rezende
-                {syncing && (
-                  <Loader2 size={14} className="animate-spin text-gray-400" />
-                )}
-              </h1>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">
-                Deus conduz nossos planos
-              </p>
+            <img 
+              src="/logo.webp" 
+              alt="Replanner" 
+              className="h-16 object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <div className="hidden flex items-center gap-3">
+              <div className="bg-white shrink-0">
+                <img src="/favicon.png" alt="Icon" className="w-8 h-8 object-contain" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                  Replanner
+                  {syncing && (
+                    <Loader2 size={14} className="animate-spin text-gray-400" />
+                  )}
+                </h1>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">
+                  Deus conduz nossos planos
+                </p>
+              </div>
             </div>
           </div>
 

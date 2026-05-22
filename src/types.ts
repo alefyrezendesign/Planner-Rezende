@@ -1,10 +1,11 @@
-export type Priority = 'Alta' | 'Média' | 'Baixa';
-export type Status = 'Não iniciado' | 'Em andamento' | 'Pendente' | 'Concluído';
+export type Priority = "Alta" | "Média" | "Baixa";
+export type Status = "Não iniciado" | "Em andamento" | "Pendente" | "Concluído";
 
 export interface Subtask {
   id: string;
   title: string;
   completed: boolean;
+  dueDate?: string;
 }
 
 export interface Task {
@@ -16,11 +17,13 @@ export interface Task {
   estimatedCost: number;
   savedAmount: number;
   subtasks: Subtask[];
+  dueDate?: string;
 }
 
 export interface CarScenario {
   id: string;
   modelName: string;
+  imageUrl?: string;
   carValue: number;
   downPaymentTarget: number;
   downPaymentSaved: number;
@@ -31,13 +34,14 @@ export interface CarScenario {
 export interface RealEstateScenario {
   id: string;
   propertyName: string;
+  imageUrl?: string;
   propertyValue: number;
   downPaymentTarget: number;
   downPaymentSaved: number;
   subsidy: number;
   interestRateAnnual: number;
   installments: number;
-  amortizationType: 'SAC' | 'PRICE';
+  amortizationType: "SAC" | "PRICE";
 }
 
 export interface FinanceItem {
@@ -68,7 +72,7 @@ export interface Debt {
   remainingValue: number;
   installmentValue: number;
   installmentsCount: number;
-  status: 'Em aberto' | 'Negociada' | 'Atrasada' | 'Quitada';
+  status: "Em aberto" | "Negociada" | "Atrasada" | "Quitada";
 }
 
 export interface ReserveGoal {
@@ -78,5 +82,5 @@ export interface ReserveGoal {
   targetValue: number;
   currentValue: number;
   monthlyPlanned: number;
-  status: 'Ativo' | 'Desativado';
+  status: "Ativo" | "Desativado";
 }

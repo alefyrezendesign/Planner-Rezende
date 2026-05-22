@@ -23,7 +23,6 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
         <div className="px-3 sm:px-5 py-4 flex flex-col justify-center">
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
             <h3 className="text-gray-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">Total Arrecadado</h3>
-            <span className="w-fit text-[9px] sm:text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded leading-none">{progress}%</span>
           </div>
           <p className="text-sm sm:text-lg font-bold text-gray-900 truncate" title={formatCurrency(totalSaved)}>{formatCurrency(totalSaved)}</p>
         </div>
