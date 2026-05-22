@@ -10,10 +10,10 @@ import { RezendeLogo } from './components/RezendeLogo';
 import { Finances } from './components/Finances';
 import { Loader2, LogIn, LogOut, ExternalLink, Plus, ListTodo, Car, Link2, Home, Wallet } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Auth } from './components/Auth';
 import { supabase } from './supabase';
-import { Session } from '@supabase/supabase-js';
 import * as api from './api';
+
+const MY_USER_ID = '287d7d93-6683-42ce-a53b-3813afeeb8d6';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -23,26 +23,24 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | 'Todas'>('Todas');
   const [activeTab, setActiveTab] = useState<'tasks' | 'cars' | 'houses' | 'finances'>('tasks');
 
-  const [session, setSession] = useState<Session | null>(null);
-  const [needsAuth, setNeedsAuth] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
   // Load all cloud data
-  const loadData = async (userId: string) => {
+  const loadData = async () => {
     setSyncing(true);
     try {
       const [fetchedTasks, fetchedCars, fetchedHouses] = await Promise.all([
-        api.fetchTasks(userId),
-        api.fetchCars(userId),
-        api.fetchHouses(userId)
+        api.fetchTasks(MY_USER_ID),
+        api.fetchCars(MY_USER_ID),
+        api.fetchHouses(MY_USER_ID)
       ]);
       setTasks(fetchedTasks);
       setCars(fetchedCars);
       setHouses(fetchedHouses);
     } catch (err: any) {
       console.error("Erro ao carregar dados do Supabase:", err);
-      alert("Erro ao carregar dados: " + (err.message || JSON.stringify(err)));
+      // alert("Erro ao carregar dados: " + (err.message || JSON.stringify(err)));
     } finally {
       setSyncing(false);
       setIsInitializing(false);
@@ -50,43 +48,19 @@ export default function App() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setNeedsAuth(!session);
-      if (session) {
-        loadData(session.user.id);
-      } else {
-        setIsInitializing(false);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setNeedsAuth(!session);
-      if (session) {
-        loadData(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    loadData();
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setTasks([]);
-    setCars([]);
-    setHouses([]);
+    if (window.confirm("Isso não tem mais efeito porque desativamos o login.")) return;
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!session?.user?.id) return;
     const previousTasks = [...tasks];
     setTasks(tasks.filter(t => t.id !== taskId));
     setSyncing(true);
     try {
-      await api.deleteTask(session.user.id, taskId);
+      await api.deleteTask(MY_USER_ID, taskId);
     } catch (err) {
       console.error(err);
       setTasks(previousTasks); // rollback
@@ -96,7 +70,7 @@ export default function App() {
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
-    if (!session?.user?.id) return;
+    
     const isNew = !tasks.find(t => t.id === updatedTask.id);
     const previousTasks = [...tasks];
     
@@ -108,7 +82,7 @@ export default function App() {
 
     setSyncing(true);
     try {
-      await api.saveTask(session.user.id, updatedTask);
+      await api.saveTask(MY_USER_ID, updatedTask);
     } catch (err: any) {
       console.error(err);
       alert("Erro ao salvar tarefa: " + (err.message || JSON.stringify(err)));
@@ -136,7 +110,7 @@ export default function App() {
   };
 
   const handleAddCar = async () => {
-    if (!session?.user.id) return;
+    
     const newCar: CarScenario = {
       id: crypto.randomUUID(),
       modelName: '',
@@ -151,7 +125,7 @@ export default function App() {
     handleUpdateCars([newCar, ...cars]);
     setSyncing(true);
     try {
-      await api.saveCar(session.user.id, newCar);
+      await api.saveCar(MY_USER_ID, newCar);
     } catch (err) {
       console.error(err);
       setCars(previousCars);
@@ -161,12 +135,12 @@ export default function App() {
   };
 
   const onUpdateCarData = async (updatedCar: CarScenario) => {
-    if (!session?.user.id) return;
+    
     const previousCars = [...cars];
     handleUpdateCars(cars.map(c => c.id === updatedCar.id ? updatedCar : c));
     setSyncing(true);
     try {
-      await api.saveCar(session.user.id, updatedCar);
+      await api.saveCar(MY_USER_ID, updatedCar);
     } catch (err) {
       console.error(err);
       setCars(previousCars);
@@ -176,7 +150,7 @@ export default function App() {
   };
 
   const onDeleteCarData = async (id: string) => {
-    if (!session?.user.id) return;
+    
     const confirm = window.confirm("Excluir este cenário de veículo?");
     if (!confirm) return;
     
@@ -184,7 +158,7 @@ export default function App() {
     handleUpdateCars(cars.filter(c => c.id !== id));
     setSyncing(true);
     try {
-      await api.deleteCar(session.user.id, id);
+      await api.deleteCar(MY_USER_ID, id);
     } catch (err) {
       console.error(err);
       setCars(previousCars);
@@ -198,7 +172,7 @@ export default function App() {
   };
 
   const handleAddHouse = async () => {
-    if (!session?.user.id) return;
+    
     const newHouse: RealEstateScenario = {
       id: crypto.randomUUID(),
       propertyName: '',
@@ -214,7 +188,7 @@ export default function App() {
     handleUpdateHouses([newHouse, ...houses]);
     setSyncing(true);
     try {
-      await api.saveHouse(session.user.id, newHouse);
+      await api.saveHouse(MY_USER_ID, newHouse);
     } catch(err) {
       console.error(err);
       setHouses(previousHouses);
@@ -224,12 +198,12 @@ export default function App() {
   };
 
   const onUpdateHouseData = async (updatedHouse: RealEstateScenario) => {
-    if (!session?.user.id) return;
+    
     const previousHouses = [...houses];
     handleUpdateHouses(houses.map(h => h.id === updatedHouse.id ? updatedHouse : h));
     setSyncing(true);
     try {
-      await api.saveHouse(session.user.id, updatedHouse);
+      await api.saveHouse(MY_USER_ID, updatedHouse);
     } catch(err) {
       console.error(err);
       setHouses(previousHouses);
@@ -239,14 +213,14 @@ export default function App() {
   };
 
   const onDeleteHouseData = async (id: string) => {
-    if (!session?.user.id) return;
+    
     const confirm = window.confirm("Excluir este cenário de imóvel?");
     if (!confirm) return;
     const previousHouses = [...houses];
     handleUpdateHouses(houses.filter(h => h.id !== id));
     setSyncing(true);
     try {
-      await api.deleteHouse(session.user.id, id);
+      await api.deleteHouse(MY_USER_ID, id);
     } catch(err) {
       console.error(err);
       setHouses(previousHouses);
@@ -314,10 +288,6 @@ export default function App() {
         </div>
       </div>
     );
-  }
-
-  if (needsAuth) {
-    return <Auth />;
   }
 
   return (
