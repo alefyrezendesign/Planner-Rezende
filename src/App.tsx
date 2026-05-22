@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Auth } from './components/Auth';
 import { supabase } from './supabase';
 import { Session } from '@supabase/supabase-js';
+import * as api from './api';
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -27,13 +28,35 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
+  // Load all cloud data
+  const loadData = async (userId: string) => {
+    setSyncing(true);
+    try {
+      const [fetchedTasks, fetchedCars, fetchedHouses] = await Promise.all([
+        api.fetchTasks(userId),
+        api.fetchCars(userId),
+        api.fetchHouses(userId)
+      ]);
+      setTasks(fetchedTasks);
+      setCars(fetchedCars);
+      setHouses(fetchedHouses);
+    } catch (err: any) {
+      console.error("Erro ao carregar dados do Supabase:", err);
+      alert("Erro ao carregar dados: " + (err.message || JSON.stringify(err)));
+    } finally {
+      setSyncing(false);
+      setIsInitializing(false);
+    }
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setNeedsAuth(!session);
-      setIsInitializing(false);
       if (session) {
-        setTasks(initialTasks); // temporary mock, will be DB fetch
+        loadData(session.user.id);
+      } else {
+        setIsInitializing(false);
       }
     });
 
@@ -43,7 +66,7 @@ export default function App() {
       setSession(session);
       setNeedsAuth(!session);
       if (session) {
-        setTasks(initialTasks); // temporary mock, will be DB fetch
+        loadData(session.user.id);
       }
     });
 
@@ -53,17 +76,45 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setTasks([]);
+    setCars([]);
+    setHouses([]);
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    if (!session?.user?.id) return;
+    const previousTasks = [...tasks];
     setTasks(tasks.filter(t => t.id !== taskId));
+    setSyncing(true);
+    try {
+      await api.deleteTask(session.user.id, taskId);
+    } catch (err) {
+      console.error(err);
+      setTasks(previousTasks); // rollback
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
-    if (!tasks.find(t => t.id === updatedTask.id)) {
+    if (!session?.user?.id) return;
+    const isNew = !tasks.find(t => t.id === updatedTask.id);
+    const previousTasks = [...tasks];
+    
+    if (isNew) {
       setTasks([updatedTask, ...tasks]);
     } else {
       setTasks(tasks.map(t => (t.id === updatedTask.id ? updatedTask : t)));
+    }
+
+    setSyncing(true);
+    try {
+      await api.saveTask(session.user.id, updatedTask);
+    } catch (err: any) {
+      console.error(err);
+      alert("Erro ao salvar tarefa: " + (err.message || JSON.stringify(err)));
+      setTasks(previousTasks); // rollback
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -84,7 +135,8 @@ export default function App() {
     setCars(newCars);
   };
 
-  const handleAddCar = () => {
+  const handleAddCar = async () => {
+    if (!session?.user.id) return;
     const newCar: CarScenario = {
       id: Math.random().toString(36).substr(2, 9),
       modelName: '',
@@ -94,23 +146,59 @@ export default function App() {
       interestRateMonthly: 1.5,
       installments: 48
     };
+    
+    const previousCars = [...cars];
     handleUpdateCars([newCar, ...cars]);
+    setSyncing(true);
+    try {
+      await api.saveCar(session.user.id, newCar);
+    } catch (err) {
+      console.error(err);
+      setCars(previousCars);
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  const onUpdateCarData = (updatedCar: CarScenario) => {
+  const onUpdateCarData = async (updatedCar: CarScenario) => {
+    if (!session?.user.id) return;
+    const previousCars = [...cars];
     handleUpdateCars(cars.map(c => c.id === updatedCar.id ? updatedCar : c));
+    setSyncing(true);
+    try {
+      await api.saveCar(session.user.id, updatedCar);
+    } catch (err) {
+      console.error(err);
+      setCars(previousCars);
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  const onDeleteCarData = (id: string) => {
+  const onDeleteCarData = async (id: string) => {
+    if (!session?.user.id) return;
     const confirm = window.confirm("Excluir este cenário de veículo?");
-    if (confirm) handleUpdateCars(cars.filter(c => c.id !== id));
+    if (!confirm) return;
+    
+    const previousCars = [...cars];
+    handleUpdateCars(cars.filter(c => c.id !== id));
+    setSyncing(true);
+    try {
+      await api.deleteCar(session.user.id, id);
+    } catch (err) {
+      console.error(err);
+      setCars(previousCars);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleUpdateHouses = async (newHouses: RealEstateScenario[]) => {
     setHouses(newHouses);
   };
 
-  const handleAddHouse = () => {
+  const handleAddHouse = async () => {
+    if (!session?.user.id) return;
     const newHouse: RealEstateScenario = {
       id: Math.random().toString(36).substr(2, 9),
       propertyName: '',
@@ -122,16 +210,49 @@ export default function App() {
       installments: 360,
       amortizationType: 'SAC'
     };
+    const previousHouses = [...houses];
     handleUpdateHouses([newHouse, ...houses]);
+    setSyncing(true);
+    try {
+      await api.saveHouse(session.user.id, newHouse);
+    } catch(err) {
+      console.error(err);
+      setHouses(previousHouses);
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  const onUpdateHouseData = (updatedHouse: RealEstateScenario) => {
+  const onUpdateHouseData = async (updatedHouse: RealEstateScenario) => {
+    if (!session?.user.id) return;
+    const previousHouses = [...houses];
     handleUpdateHouses(houses.map(h => h.id === updatedHouse.id ? updatedHouse : h));
+    setSyncing(true);
+    try {
+      await api.saveHouse(session.user.id, updatedHouse);
+    } catch(err) {
+      console.error(err);
+      setHouses(previousHouses);
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  const onDeleteHouseData = (id: string) => {
+  const onDeleteHouseData = async (id: string) => {
+    if (!session?.user.id) return;
     const confirm = window.confirm("Excluir este cenário de imóvel?");
-    if (confirm) handleUpdateHouses(houses.filter(h => h.id !== id));
+    if (!confirm) return;
+    const previousHouses = [...houses];
+    handleUpdateHouses(houses.filter(h => h.id !== id));
+    setSyncing(true);
+    try {
+      await api.deleteHouse(session.user.id, id);
+    } catch(err) {
+      console.error(err);
+      setHouses(previousHouses);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const categories = useMemo(() => {
