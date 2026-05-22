@@ -13,23 +13,25 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
   const progress = totalEstimated > 0 ? Math.round((totalSaved / totalEstimated) * 100) : 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
-      <div className="bg-gray-50 rounded-xl px-4 py-3 flex flex-col justify-between">
-        <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Orçamento Total</h3>
-        <p className="text-lg font-medium text-gray-800">{formatCurrency(totalEstimated)}</p>
-      </div>
-
-      <div className="bg-gray-50 rounded-xl px-4 py-3 flex flex-col justify-between">
-        <div className="flex justify-between items-end mb-1">
-          <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Total Arrecadado</h3>
-          <span className="text-xs font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded">{progress}%</span>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-4 overflow-hidden">
+      <div className="grid grid-cols-3 divide-x divide-gray-100">
+        <div className="px-3 sm:px-5 py-4 flex flex-col justify-center">
+          <h3 className="text-gray-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider mb-1">Orçamento Total</h3>
+          <p className="text-sm sm:text-lg font-bold text-gray-900 truncate" title={formatCurrency(totalEstimated)}>{formatCurrency(totalEstimated)}</p>
         </div>
-        <p className="text-lg font-medium text-gray-800">{formatCurrency(totalSaved)}</p>
-      </div>
 
-      <div className="bg-gray-50 rounded-xl px-4 py-3 flex flex-col justify-between">
-        <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Falta Arrecadar</h3>
-        <p className="text-lg font-medium text-gray-800">{formatCurrency(remaining)}</p>
+        <div className="px-3 sm:px-5 py-4 flex flex-col justify-center">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+            <h3 className="text-gray-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider">Total Arrecadado</h3>
+            <span className="w-fit text-[9px] sm:text-[10px] font-bold text-green-700 bg-green-100 px-1.5 py-0.5 rounded leading-none">{progress}%</span>
+          </div>
+          <p className="text-sm sm:text-lg font-bold text-gray-900 truncate" title={formatCurrency(totalSaved)}>{formatCurrency(totalSaved)}</p>
+        </div>
+
+        <div className="px-3 sm:px-5 py-4 flex flex-col justify-center">
+          <h3 className="text-gray-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-wider mb-1">Falta Arrecadar</h3>
+          <p className="text-sm sm:text-lg font-bold text-gray-900 truncate" title={formatCurrency(remaining)}>{formatCurrency(remaining)}</p>
+        </div>
       </div>
     </div>
   );

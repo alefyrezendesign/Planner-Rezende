@@ -39,3 +39,44 @@ export interface RealEstateScenario {
   installments: number;
   amortizationType: 'SAC' | 'PRICE';
 }
+
+export interface FinanceItem {
+  id: string;
+  type: string;
+  category?: string;
+  description: string;
+  expectedValue: number; // Default expected per month
+  monthlyRealized: Record<number, number>; // Month index (0-11) to realized value
+  monthlyExpected: Record<number, number>; // Month index (0-11) to expected value
+  dueDate?: string; // Day of month
+  paymentMethod?: string;
+}
+
+export interface CreditCard {
+  id: string;
+  name: string;
+  totalLimit: number;
+  usedLimit: number;
+  invoiceValue: number; // Simulated monthly value
+  dueDay: number;
+}
+
+export interface Debt {
+  id: string;
+  creditor: string;
+  type: string;
+  remainingValue: number;
+  installmentValue: number;
+  installmentsCount: number;
+  status: 'Em aberto' | 'Negociada' | 'Atrasada' | 'Quitada';
+}
+
+export interface ReserveGoal {
+  id: string;
+  name: string;
+  objective: string;
+  targetValue: number;
+  currentValue: number;
+  monthlyPlanned: number;
+  status: 'Ativo' | 'Desativado';
+}
