@@ -60,8 +60,10 @@ export const Auth = () => {
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
+                id="email"
+                name="email"
                 type="email"
                 required
                 value={email}
@@ -72,8 +74,10 @@ export const Auth = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
               <input
+                id="password"
+                name="password"
                 type="password"
                 required
                 value={password}

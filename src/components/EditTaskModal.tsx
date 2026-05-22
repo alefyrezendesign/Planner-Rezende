@@ -32,7 +32,7 @@ export function EditTaskModal({ task, isOpen, onClose, onSave, onDelete }: EditT
 
   const handleAddSubtask = () => {
     const newSubtask = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       title: 'Nova subtarefa',
       completed: false
     };

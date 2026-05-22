@@ -120,7 +120,7 @@ export default function App() {
 
   const handleCreateNewTask = () => {
     setEditingTask({
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       title: '',
       category: 'Geral',
       priority: 'Média',
@@ -138,7 +138,7 @@ export default function App() {
   const handleAddCar = async () => {
     if (!session?.user.id) return;
     const newCar: CarScenario = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       modelName: '',
       carValue: 50000,
       downPaymentTarget: 10000,
@@ -200,7 +200,7 @@ export default function App() {
   const handleAddHouse = async () => {
     if (!session?.user.id) return;
     const newHouse: RealEstateScenario = {
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       propertyName: '',
       propertyValue: 300000,
       downPaymentTarget: 60000,
