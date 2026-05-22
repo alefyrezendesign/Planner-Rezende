@@ -1,46 +1,62 @@
-import { useState, useEffect, useMemo } from 'react';
-import { initialTasks } from './data';
-import { Task, CarScenario, RealEstateScenario } from './types';
-import { TaskCard } from './components/TaskCard';
-import { DashboardStats } from './components/DashboardStats';
-import { EditTaskModal } from './components/EditTaskModal';
-import { CarSimulator } from './components/CarSimulator';
-import { HouseSimulator } from './components/HouseSimulator';
-import { RezendeLogo } from './components/RezendeLogo';
-import { Finances } from './components/Finances';
-import { Loader2, LogIn, LogOut, ExternalLink, Plus, ListTodo, Car, Link2, Home, Wallet } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from './supabase';
-import * as api from './api';
-
-const MY_USER_ID = '287d7d93-6683-42ce-a53b-3813afeeb8d6';
+import { useState, useEffect, useMemo } from "react";
+import { initialTasks } from "./data";
+import { Task, CarScenario, RealEstateScenario } from "./types";
+import { TaskCard } from "./components/TaskCard";
+import { DashboardStats } from "./components/DashboardStats";
+import { EditTaskModal } from "./components/EditTaskModal";
+import { CarSimulator } from "./components/CarSimulator";
+import { HouseSimulator } from "./components/HouseSimulator";
+import { RezendeLogo } from "./components/RezendeLogo";
+import { Finances } from "./components/Finances";
+import {
+  Loader2,
+  LogIn,
+  LogOut,
+  ExternalLink,
+  Plus,
+  ListTodo,
+  Car,
+  Link2,
+  Home,
+  Wallet,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Auth } from "./components/Auth";
+import { supabase } from "./supabase";
+import { Session } from "@supabase/supabase-js";
+import * as api from "./api";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [cars, setCars] = useState<CarScenario[]>([]);
   const [houses, setHouses] = useState<RealEstateScenario[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | 'Todas'>('Todas');
-  const [activeTab, setActiveTab] = useState<'tasks' | 'cars' | 'houses' | 'finances'>('tasks');
+  const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
+    "Todas",
+  );
+  const [activeTab, setActiveTab] = useState<
+    "tasks" | "cars" | "houses" | "finances"
+  >("tasks");
 
+  const [session, setSession] = useState<Session | null>(null);
+  const [needsAuth, setNeedsAuth] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
 
   // Load all cloud data
-  const loadData = async () => {
+  const loadData = async (userId: string) => {
     setSyncing(true);
     try {
       const [fetchedTasks, fetchedCars, fetchedHouses] = await Promise.all([
-        api.fetchTasks(MY_USER_ID),
-        api.fetchCars(MY_USER_ID),
-        api.fetchHouses(MY_USER_ID)
+        api.fetchTasks(userId),
+        api.fetchCars(userId),
+        api.fetchHouses(userId),
       ]);
       setTasks(fetchedTasks);
       setCars(fetchedCars);
       setHouses(fetchedHouses);
     } catch (err: any) {
       console.error("Erro ao carregar dados do Supabase:", err);
-      // alert("Erro ao carregar dados: " + (err.message || JSON.stringify(err)));
     } finally {
       setSyncing(false);
       setIsInitializing(false);
@@ -48,19 +64,43 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadData();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setNeedsAuth(!session);
+      if (session) {
+        loadData(session.user.id);
+      } else {
+        setIsInitializing(false);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setNeedsAuth(!session);
+      if (session) {
+        loadData(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
-    if (window.confirm("Isso não tem mais efeito porque desativamos o login.")) return;
+    await supabase.auth.signOut();
+    setTasks([]);
+    setCars([]);
+    setHouses([]);
   };
 
   const handleDeleteTask = async (taskId: string) => {
+    if (!session?.user?.id) return;
     const previousTasks = [...tasks];
-    setTasks(tasks.filter(t => t.id !== taskId));
+    setTasks(tasks.filter((t) => t.id !== taskId));
     setSyncing(true);
     try {
-      await api.deleteTask(MY_USER_ID, taskId);
+      await api.deleteTask(session.user.id, taskId);
     } catch (err) {
       console.error(err);
       setTasks(previousTasks); // rollback
@@ -70,19 +110,19 @@ export default function App() {
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
-    
-    const isNew = !tasks.find(t => t.id === updatedTask.id);
+    if (!session?.user?.id) return;
+    const isNew = !tasks.find((t) => t.id === updatedTask.id);
     const previousTasks = [...tasks];
-    
+
     if (isNew) {
       setTasks([updatedTask, ...tasks]);
     } else {
-      setTasks(tasks.map(t => (t.id === updatedTask.id ? updatedTask : t)));
+      setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
     }
 
     setSyncing(true);
     try {
-      await api.saveTask(MY_USER_ID, updatedTask);
+      await api.saveTask(session.user.id, updatedTask);
     } catch (err: any) {
       console.error(err);
       alert("Erro ao salvar tarefa: " + (err.message || JSON.stringify(err)));
@@ -95,13 +135,13 @@ export default function App() {
   const handleCreateNewTask = () => {
     setEditingTask({
       id: crypto.randomUUID(),
-      title: '',
-      category: 'Geral',
-      priority: 'Média',
-      status: 'Não iniciado',
+      title: "",
+      category: "Geral",
+      priority: "Média",
+      status: "Não iniciado",
       estimatedCost: 0,
       savedAmount: 0,
-      subtasks: []
+      subtasks: [],
     });
   };
 
@@ -110,22 +150,22 @@ export default function App() {
   };
 
   const handleAddCar = async () => {
-    
+    if (!session?.user.id) return;
     const newCar: CarScenario = {
       id: crypto.randomUUID(),
-      modelName: '',
+      modelName: "",
       carValue: 50000,
       downPaymentTarget: 10000,
       downPaymentSaved: 0,
       interestRateMonthly: 1.5,
-      installments: 48
+      installments: 48,
     };
-    
+
     const previousCars = [...cars];
     handleUpdateCars([newCar, ...cars]);
     setSyncing(true);
     try {
-      await api.saveCar(MY_USER_ID, newCar);
+      await api.saveCar(session.user.id, newCar);
     } catch (err) {
       console.error(err);
       setCars(previousCars);
@@ -135,12 +175,14 @@ export default function App() {
   };
 
   const onUpdateCarData = async (updatedCar: CarScenario) => {
-    
+    if (!session?.user.id) return;
     const previousCars = [...cars];
-    handleUpdateCars(cars.map(c => c.id === updatedCar.id ? updatedCar : c));
+    handleUpdateCars(
+      cars.map((c) => (c.id === updatedCar.id ? updatedCar : c)),
+    );
     setSyncing(true);
     try {
-      await api.saveCar(MY_USER_ID, updatedCar);
+      await api.saveCar(session.user.id, updatedCar);
     } catch (err) {
       console.error(err);
       setCars(previousCars);
@@ -150,15 +192,15 @@ export default function App() {
   };
 
   const onDeleteCarData = async (id: string) => {
-    
+    if (!session?.user.id) return;
     const confirm = window.confirm("Excluir este cenário de veículo?");
     if (!confirm) return;
-    
+
     const previousCars = [...cars];
-    handleUpdateCars(cars.filter(c => c.id !== id));
+    handleUpdateCars(cars.filter((c) => c.id !== id));
     setSyncing(true);
     try {
-      await api.deleteCar(MY_USER_ID, id);
+      await api.deleteCar(session.user.id, id);
     } catch (err) {
       console.error(err);
       setCars(previousCars);
@@ -172,24 +214,24 @@ export default function App() {
   };
 
   const handleAddHouse = async () => {
-    
+    if (!session?.user.id) return;
     const newHouse: RealEstateScenario = {
       id: crypto.randomUUID(),
-      propertyName: '',
+      propertyName: "",
       propertyValue: 300000,
       downPaymentTarget: 60000,
       downPaymentSaved: 0,
       subsidy: 0,
       interestRateAnnual: 8.5,
       installments: 360,
-      amortizationType: 'SAC'
+      amortizationType: "SAC",
     };
     const previousHouses = [...houses];
     handleUpdateHouses([newHouse, ...houses]);
     setSyncing(true);
     try {
-      await api.saveHouse(MY_USER_ID, newHouse);
-    } catch(err) {
+      await api.saveHouse(session.user.id, newHouse);
+    } catch (err) {
       console.error(err);
       setHouses(previousHouses);
     } finally {
@@ -198,13 +240,15 @@ export default function App() {
   };
 
   const onUpdateHouseData = async (updatedHouse: RealEstateScenario) => {
-    
+    if (!session?.user.id) return;
     const previousHouses = [...houses];
-    handleUpdateHouses(houses.map(h => h.id === updatedHouse.id ? updatedHouse : h));
+    handleUpdateHouses(
+      houses.map((h) => (h.id === updatedHouse.id ? updatedHouse : h)),
+    );
     setSyncing(true);
     try {
-      await api.saveHouse(MY_USER_ID, updatedHouse);
-    } catch(err) {
+      await api.saveHouse(session.user.id, updatedHouse);
+    } catch (err) {
       console.error(err);
       setHouses(previousHouses);
     } finally {
@@ -213,15 +257,15 @@ export default function App() {
   };
 
   const onDeleteHouseData = async (id: string) => {
-    
+    if (!session?.user.id) return;
     const confirm = window.confirm("Excluir este cenário de imóvel?");
     if (!confirm) return;
     const previousHouses = [...houses];
-    handleUpdateHouses(houses.filter(h => h.id !== id));
+    handleUpdateHouses(houses.filter((h) => h.id !== id));
     setSyncing(true);
     try {
-      await api.deleteHouse(MY_USER_ID, id);
-    } catch(err) {
+      await api.deleteHouse(session.user.id, id);
+    } catch (err) {
       console.error(err);
       setHouses(previousHouses);
     } finally {
@@ -230,24 +274,24 @@ export default function App() {
   };
 
   const categories = useMemo(() => {
-    const cats = new Set(tasks.map(t => t.category));
-    return ['Todas', ...Array.from(cats).sort()];
+    const cats = new Set(tasks.map((t) => t.category));
+    return ["Todas", ...Array.from(cats).sort()];
   }, [tasks]);
 
   const taskStats = useMemo(() => {
     let notStarted = 0;
     let inProgress = 0;
     let completed = 0;
-    
+
     let subtasksPending = 0;
     let subtasksCompleted = 0;
 
-    tasks.forEach(task => {
-      if (task.status === 'Não iniciado') notStarted++;
-      else if (task.status === 'Em andamento') inProgress++;
-      else if (task.status === 'Concluído') completed++;
+    tasks.forEach((task) => {
+      if (task.status === "Não iniciado") notStarted++;
+      else if (task.status === "Em andamento") inProgress++;
+      else if (task.status === "Concluído") completed++;
 
-      task.subtasks.forEach(sub => {
+      task.subtasks.forEach((sub) => {
         if (sub.completed) subtasksCompleted++;
         else subtasksPending++;
       });
@@ -260,21 +304,21 @@ export default function App() {
       subtasksPending,
       subtasksCompleted,
       totalTasks: tasks.length,
-      totalSubtasks: subtasksPending + subtasksCompleted
+      totalSubtasks: subtasksPending + subtasksCompleted,
     };
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
-    if (selectedCategory !== 'Todas') {
-      result = tasks.filter(t => t.category === selectedCategory);
+    if (selectedCategory !== "Todas") {
+      result = tasks.filter((t) => t.category === selectedCategory);
     }
-    
-    const priorityWeight = { 'Alta': 3, 'Média': 2, 'Baixa': 1 };
-    
+
+    const priorityWeight = { Alta: 3, Média: 2, Baixa: 1 };
+
     return [...result].sort((a, b) => {
-      if (a.status === 'Concluído' && b.status !== 'Concluído') return 1;
-      if (a.status !== 'Concluído' && b.status === 'Concluído') return -1;
+      if (a.status === "Concluído" && b.status !== "Concluído") return 1;
+      if (a.status !== "Concluído" && b.status === "Concluído") return -1;
       return priorityWeight[b.priority] - priorityWeight[a.priority];
     });
   }, [tasks, selectedCategory]);
@@ -290,6 +334,10 @@ export default function App() {
     );
   }
 
+  if (needsAuth) {
+    return <Auth />;
+  }
+
   return (
     <div className="min-h-screen bg-neutral-50 text-gray-900 font-sans pb-28">
       {/* Header */}
@@ -302,14 +350,18 @@ export default function App() {
             <div>
               <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
                 Planner Rezende
-                {syncing && <Loader2 size={14} className="animate-spin text-gray-400" />}
+                {syncing && (
+                  <Loader2 size={14} className="animate-spin text-gray-400" />
+                )}
               </h1>
-              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Deus conduz nossos planos</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">
+                Deus conduz nossos planos
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-4 text-sm font-medium">
-            <button 
+            <button
               onClick={handleLogout}
               className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
               title="Sair da conta"
@@ -326,24 +378,36 @@ export default function App() {
 
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center px-4 gap-4">
           <div className="flex flex-wrap items-center gap-3 text-[13px] font-medium">
-            <span className="text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200/60 shadow-sm">{taskStats.totalTasks} Tarefas</span>
+            <span className="text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200/60 shadow-sm">
+              {taskStats.totalTasks} Tarefas
+            </span>
             <div className="flex items-center gap-2 text-gray-500">
-              <span className="text-gray-600">{taskStats.notStarted} Fazer</span>
+              <span className="text-gray-600">
+                {taskStats.notStarted} Fazer
+              </span>
               <span className="text-gray-300">•</span>
-              <span className="text-blue-600">{taskStats.inProgress} Fazendo</span>
+              <span className="text-blue-600">
+                {taskStats.inProgress} Fazendo
+              </span>
               <span className="text-gray-300">•</span>
-              <span className="text-green-600">{taskStats.completed} Feitas</span>
+              <span className="text-green-600">
+                {taskStats.completed} Feitas
+              </span>
             </div>
           </div>
           <div className="hidden sm:block w-px h-4 bg-gray-300 mx-1"></div>
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 uppercase tracking-wider font-semibold">
             <span>{taskStats.totalSubtasks} Subtarefas:</span>
-            <span className="text-gray-400">{taskStats.subtasksPending} Pendentes</span>
+            <span className="text-gray-400">
+              {taskStats.subtasksPending} Pendentes
+            </span>
             <span className="text-gray-300">/</span>
-            <span className="text-green-600">{taskStats.subtasksCompleted} Concluídas</span>
+            <span className="text-green-600">
+              {taskStats.subtasksCompleted} Concluídas
+            </span>
           </div>
         </div>
-        
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -352,18 +416,18 @@ export default function App() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            {activeTab === 'finances' ? (
+            {activeTab === "finances" ? (
               <Finances />
-            ) : activeTab === 'cars' ? (
-              <CarSimulator 
-                cars={cars} 
+            ) : activeTab === "cars" ? (
+              <CarSimulator
+                cars={cars}
                 onAddCar={handleAddCar}
                 onUpdateCar={onUpdateCarData}
                 onDeleteCar={onDeleteCarData}
               />
-            ) : activeTab === 'houses' ? (
-              <HouseSimulator 
-                houses={houses} 
+            ) : activeTab === "houses" ? (
+              <HouseSimulator
+                houses={houses}
                 onAddHouse={handleAddHouse}
                 onUpdateHouse={onUpdateHouseData}
                 onDeleteHouse={onDeleteHouseData}
@@ -371,73 +435,77 @@ export default function App() {
             ) : (
               <>
                 {/* Category Filters */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="overflow-x-auto hide-scrollbar flex-1">
-                <div className="flex gap-2 pb-2">
-                  {categories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                        selectedCategory === cat 
-                          ? 'bg-gray-900 text-white shadow-sm' 
-                          : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button 
-                onClick={handleCreateNewTask}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-colors shadow-sm"
-              >
-                <Plus size={18} />
-                Nova Tarefa
-              </button>
-            </div>
-
-            {/* Tasks View */}
-            <div className="max-w-3xl">
-              <AnimatePresence mode="popLayout">
-                {filteredTasks.length === 0 ? (
-                  <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300 flex flex-col items-center justify-center gap-4"
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="overflow-x-auto hide-scrollbar flex-1">
+                    <div className="flex gap-2 pb-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                            selectedCategory === cat
+                              ? "bg-gray-900 text-white shadow-sm"
+                              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCreateNewTask}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-colors shadow-sm"
                   >
-                     <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
-                        <ListTodo className="text-gray-400" size={32} />
-                     </div>
-                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Nenhuma tarefa encontrada</h3>
-                        <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-                           {selectedCategory === 'Todas' ? 'Comece adicionando uma nova meta, projeto ou tarefa financeira.' : `Não há tarefas na categoria "${selectedCategory}".`}
-                        </p>
-                     </div>
-                     <button
-                        onClick={handleCreateNewTask}
-                        className="mt-2 text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                     >
-                        Adicionar Tarefa
-                     </button>
-                  </motion.div>
-                ) : (
-                  filteredTasks.map(task => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task} 
-                      onUpdate={handleUpdateTask} 
-                      onEditClick={setEditingTask}
-                    />
-                  ))
-                )}
-              </AnimatePresence>
-            </div>
-          </>
-        )}
+                    <Plus size={18} />
+                    Nova Tarefa
+                  </button>
+                </div>
+
+                {/* Tasks View */}
+                <div className="max-w-3xl">
+                  <AnimatePresence mode="popLayout">
+                    {filteredTasks.length === 0 ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300 flex flex-col items-center justify-center gap-4"
+                      >
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center border border-gray-100">
+                          <ListTodo className="text-gray-400" size={32} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Nenhuma tarefa encontrada
+                          </h3>
+                          <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                            {selectedCategory === "Todas"
+                              ? "Comece adicionando uma nova meta, projeto ou tarefa financeira."
+                              : `Não há tarefas na categoria "${selectedCategory}".`}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleCreateNewTask}
+                          className="mt-2 text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                        >
+                          Adicionar Tarefa
+                        </button>
+                      </motion.div>
+                    ) : (
+                      filteredTasks.map((task) => (
+                        <TaskCard
+                          key={task.id}
+                          task={task}
+                          onUpdate={handleUpdateTask}
+                          onEditClick={setEditingTask}
+                        />
+                      ))
+                    )}
+                  </AnimatePresence>
+                </div>
+              </>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -455,34 +523,34 @@ export default function App() {
 
       {/* Fixed Bottom Navigation */}
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200 p-1.5 flex items-center gap-1">
-         <button 
-           onClick={() => setActiveTab('tasks')}
-           className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === 'tasks' ? 'bg-white text-gray-900 border border-gray-200 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent'}`}
-         >
-            <ListTodo size={18} />
-            Tarefas
-         </button>
-         <button 
-           onClick={() => setActiveTab('cars')}
-           className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === 'cars' ? 'bg-white text-gray-900 border border-gray-200 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent'}`}
-         >
-            <Car size={18} />
-            Veículos
-         </button>
-         <button 
-           onClick={() => setActiveTab('houses')}
-           className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === 'houses' ? 'bg-white text-gray-900 border border-gray-200 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent'}`}
-         >
-            <Home size={18} />
-            Imóveis
-         </button>
-         <button 
-           onClick={() => setActiveTab('finances')}
-           className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === 'finances' ? 'bg-white text-gray-900 border border-gray-200 shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent'}`}
-         >
-            <Wallet size={18} />
-            Finanças
-         </button>
+        <button
+          onClick={() => setActiveTab("tasks")}
+          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "tasks" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
+        >
+          <ListTodo size={18} />
+          Tarefas
+        </button>
+        <button
+          onClick={() => setActiveTab("cars")}
+          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "cars" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
+        >
+          <Car size={18} />
+          Veículos
+        </button>
+        <button
+          onClick={() => setActiveTab("houses")}
+          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "houses" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
+        >
+          <Home size={18} />
+          Imóveis
+        </button>
+        <button
+          onClick={() => setActiveTab("finances")}
+          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "finances" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
+        >
+          <Wallet size={18} />
+          Finanças
+        </button>
       </div>
     </div>
   );
