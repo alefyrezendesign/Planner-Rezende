@@ -1,0 +1,6 @@
+{
+  "name": "Planner Rezende",
+  "description": "Planner Rezende - Metas financeiras, simulação de carros e imóveis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
