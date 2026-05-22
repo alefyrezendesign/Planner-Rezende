@@ -1,6 +1,6 @@
 import { Task } from './types';
 
-export const generateId = () => Math.random().toString(36).substr(2, 9);
+export const generateId = () => crypto.randomUUID();
 
 export const initialTasks: Task[] = [
   {
