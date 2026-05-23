@@ -52,6 +52,19 @@ export default function App() {
     localStorage.setItem("global_cars_saved", val.toString());
   };
   const [houses, setHouses] = useState<RealEstateScenario[]>([]);
+  const [globalHousesSavedAmount, setGlobalHousesSavedAmount] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("global_houses_saved");
+      return saved ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const handleUpdateGlobalHousesSavedAmount = (val: number) => {
+    setGlobalHousesSavedAmount(val);
+    localStorage.setItem("global_houses_saved", val.toString());
+  };
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
     "Todas",
@@ -219,15 +232,22 @@ export default function App() {
     handleUpdateCars(
       cars.map((c) => (c.id === updatedCar.id ? updatedCar : c)),
     );
+    
+    // Debounce API calls to avoid rate limits
+    const timeoutKey = `car_${updatedCar.id}`;
+    if ((window as any)[timeoutKey]) clearTimeout((window as any)[timeoutKey]);
+    
     setSyncing(true);
-    try {
-      await api.saveCar(session.user.id, updatedCar);
-    } catch (err) {
-      console.error(err);
-      setCars(previousCars);
-    } finally {
-      setSyncing(false);
-    }
+    (window as any)[timeoutKey] = setTimeout(async () => {
+      try {
+        await api.saveCar(session!.user.id, updatedCar);
+      } catch (err) {
+        console.error(err);
+        setCars(previousCars);
+      } finally {
+        setSyncing(false);
+      }
+    }, 1000);
   };
 
   const onDeleteCarData = async (id: string) => {
@@ -282,15 +302,22 @@ export default function App() {
     handleUpdateHouses(
       houses.map((h) => (h.id === updatedHouse.id ? updatedHouse : h)),
     );
+    
+    // Debounce API calls to avoid rate limits
+    const timeoutKey = `house_${updatedHouse.id}`;
+    if ((window as any)[timeoutKey]) clearTimeout((window as any)[timeoutKey]);
+    
     setSyncing(true);
-    try {
-      await api.saveHouse(session.user.id, updatedHouse);
-    } catch (err) {
-      console.error(err);
-      setHouses(previousHouses);
-    } finally {
-      setSyncing(false);
-    }
+    (window as any)[timeoutKey] = setTimeout(async () => {
+      try {
+        await api.saveHouse(session!.user.id, updatedHouse);
+      } catch (err) {
+        console.error(err);
+        setHouses(previousHouses);
+      } finally {
+        setSyncing(false);
+      }
+    }, 1000);
   };
 
   const onDeleteHouseData = async (id: string) => {
@@ -452,6 +479,8 @@ export default function App() {
             ) : activeTab === "houses" ? (
               <HouseSimulator
                 houses={houses}
+                globalHousesSavedAmount={globalHousesSavedAmount}
+                onUpdateGlobalHousesSavedAmount={handleUpdateGlobalHousesSavedAmount}
                 onAddHouse={handleAddHouse}
                 onUpdateHouse={onUpdateHouseData}
                 onDeleteHouse={onDeleteHouseData}

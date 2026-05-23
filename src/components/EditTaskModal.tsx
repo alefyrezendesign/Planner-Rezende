@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Task, Priority, Status } from "../types";
-import { X } from "lucide-react";
+import { X, Calendar, Trash2 } from "lucide-react";
 
 interface EditTaskModalProps {
   task: Task;
@@ -109,7 +109,7 @@ export function EditTaskModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Categoria
@@ -170,7 +170,7 @@ export function EditTaskModal({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Valor Estimado (R$)
@@ -217,25 +217,44 @@ export function EditTaskModal({
 
             <div className="space-y-2">
               {formData.subtasks.map((st) => (
-                <div key={st.id} className="flex gap-2">
+                <div key={st.id} className="flex gap-2 items-center">
                   <input
                     type="text"
                     value={st.title}
                     onChange={(e) => handleUpdateSubtask(st.id, e.target.value)}
-                    className="flex-[2] px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                    placeholder="Título"
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Nome da subtarefa"
                   />
-                  <input
-                    type="date"
-                    value={st.dueDate || ""}
-                    onChange={(e) =>
-                      handleUpdateSubtaskDate(st.id, e.target.value)
-                    }
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  />
+                  <div className="relative flex-shrink-0">
+                    <input
+                      type="date"
+                      value={st.dueDate || ""}
+                      onChange={(e) =>
+                        handleUpdateSubtaskDate(st.id, e.target.value)
+                      }
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div
+                      className={`flex items-center justify-center p-2 rounded-lg border transition-colors ${
+                        st.dueDate
+                          ? "border-blue-200 bg-blue-50 text-blue-700"
+                          : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Calendar size={16} />
+                      {st.dueDate && (
+                        <span className="text-[10px] ml-1 font-medium whitespace-nowrap">
+                          {new Date(st.dueDate + "T12:00:00").toLocaleDateString(
+                            "pt-BR",
+                            { day: "2-digit", month: "2-digit" },
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                   <button
                     onClick={() => handleDeleteSubtask(st.id)}
-                    className="p-2 text-gray-400 hover:text-red-500"
+                    className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <X size={16} />
                   </button>
@@ -260,9 +279,11 @@ export function EditTaskModal({
                 onClose();
               }
             }}
-            className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
+            className="px-3 sm:px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors flex items-center justify-center"
+            title="Excluir Tarefa"
           >
-            Excluir Tarefa
+            <span className="hidden sm:inline">Excluir Tarefa</span>
+            <Trash2 size={18} className="sm:hidden" />
           </button>
           <div className="flex gap-2">
             <button

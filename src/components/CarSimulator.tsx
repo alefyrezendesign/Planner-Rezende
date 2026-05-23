@@ -4,7 +4,7 @@ import { formatCurrency } from "../utils";
 import {
   Plus,
   Trash2,
-  Calculator,
+  Check,
   Edit2,
   Car,
   Image as ImageIcon,
@@ -156,32 +156,37 @@ export function CarSimulator({
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Image Section */}
-                  <div className="w-full md:w-1/3 bg-gray-50 relative min-h-[200px] border-b md:border-b-0 md:border-r border-gray-100 flex flex-col justify-center items-center">
-                    {car.imageUrl ? (
-                      <img
-                        src={car.imageUrl}
-                        alt={car.modelName}
-                        className="w-full h-full object-cover absolute inset-0"
-                      />
-                    ) : (
-                      <div className="text-gray-300 flex flex-col items-center gap-2 p-6 z-10 w-full">
-                        <Car size={48} />
-                        <span className="text-sm font-medium">Sem imagem</span>
-                      </div>
-                    )}
+                  <div className="w-full md:w-1/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50">
+                    <div className="relative w-full min-h-[200px] flex-1 flex items-center justify-center overflow-hidden bg-gray-100">
+                      {car.imageUrl ? (
+                        <img
+                          src={car.imageUrl}
+                          alt={car.modelName}
+                          className="w-full h-full object-cover absolute inset-0"
+                        />
+                      ) : (
+                        <div className="text-gray-300 flex flex-col items-center gap-2 p-6 z-10 w-full">
+                          <Car size={48} />
+                          <span className="text-sm font-medium">Sem imagem</span>
+                        </div>
+                      )}
+                    </div>
                     {isEditing && (
-                      <div className="absolute top-0 inset-x-0 p-3 flex flex-col gap-2 bg-gradient-to-b from-black/60 to-transparent z-20">
+                      <div className="p-4 bg-white border-t border-gray-100 space-y-3">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                          Alterar Imagem
+                        </p>
                         <div className="relative flex items-center">
                           <ImageIcon
-                            className="absolute left-3 text-white/70"
+                            className="absolute left-3 text-gray-400"
                             size={16}
                           />
                           <input
                             type="text"
                             value={car.imageUrl || ""}
                             onChange={(e) => handleChange(e, car, "imageUrl")}
-                            placeholder="URL da imagem (ex: https://...)"
-                            className="bg-black/40 text-white placeholder-white/50 border border-white/20 rounded-lg py-1.5 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
+                            placeholder="URL da imagem"
+                            className="bg-white border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                           />
                         </div>
                         <div className="relative flex items-center">
@@ -201,7 +206,7 @@ export function CarSimulator({
                                 reader.readAsDataURL(file);
                               }
                             }}
-                            className="text-xs text-white/80 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30 truncate w-full"
+                            className="text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 w-full cursor-pointer"
                           />
                         </div>
                       </div>
@@ -234,11 +239,11 @@ export function CarSimulator({
                             onClick={() =>
                               setEditingId(isEditing ? null : car.id)
                             }
-                            className={`p-2 rounded-full transition-all ${isEditing ? "bg-blue-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-200 hover:text-gray-900"}`}
+                            className={`p-2 rounded-full transition-all ${isEditing ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-gray-500 hover:bg-blue-50 hover:text-blue-600"}`}
                             title={isEditing ? "Salvar" : "Editar"}
                           >
                             {isEditing ? (
-                              <Calculator size={16} />
+                              <Check size={16} strokeWidth={3} />
                             ) : (
                               <Edit2 size={16} />
                             )}
@@ -361,14 +366,14 @@ export function CarSimulator({
                           </div>
 
                           <div className="pt-5 border-t border-slate-200/60 mt-auto">
-                            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
                               Parcela Estimada
                             </p>
-                            <p className="text-3xl font-black text-blue-600 tracking-tight leading-none mb-2">
+                            <p className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2">
                               {car.installments > 0 ? formatCurrency(pmt) : "R$ 0,00"}
                             </p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              Custo Final: <span className="font-bold text-slate-700">{formatCurrency(totalCarCost)}</span>
+                            <p className="text-sm text-slate-500 font-medium">
+                              Custo Final: <span className="font-bold text-slate-900">{formatCurrency(totalCarCost)}</span>
                             </p>
                           </div>
                         </div>

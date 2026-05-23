@@ -4,7 +4,7 @@ import { formatCurrency } from "../utils";
 import {
   Plus,
   Trash2,
-  Calculator,
+  Check,
   Edit2,
   Home,
   Image as ImageIcon,
@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from "motion/react";
 
 interface HouseSimulatorProps {
   houses: RealEstateScenario[];
+  globalHousesSavedAmount: number;
+  onUpdateGlobalHousesSavedAmount: (val: number) => void;
   onAddHouse: () => void;
   onUpdateHouse: (house: RealEstateScenario) => void;
   onDeleteHouse: (id: string) => void;
@@ -20,11 +22,15 @@ interface HouseSimulatorProps {
 
 export function HouseSimulator({
   houses,
+  globalHousesSavedAmount,
+  onUpdateGlobalHousesSavedAmount,
   onAddHouse,
   onUpdateHouse,
   onDeleteHouse,
 }: HouseSimulatorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isEditingGlobalSaved, setIsEditingGlobalSaved] = useState(false);
+  const [tempGlobalSaved, setTempGlobalSaved] = useState("");
 
   const calculateAmortization = (
     financed: number,
@@ -84,25 +90,79 @@ export function HouseSimulator({
     onUpdateHouse({ ...house, [field]: val });
   };
 
+  const handleSaveGlobalAmount = () => {
+    onUpdateGlobalHousesSavedAmount(Number(tempGlobalSaved) || 0);
+    setIsEditingGlobalSaved(false);
+  };
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-        <div>
-          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
-            <Home className="text-indigo-600" />
-            Simulador de Imóveis
-          </h2>
-          <p className="text-sm text-gray-500">
-            Planeje a compra e compare cenários de financiamento (SAC / PRICE).
-          </p>
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="flex flex-col gap-5 pb-6 border-b border-gray-100">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900">
+              <Home className="text-indigo-600" size={28} />
+              Lar da Promessa
+            </h2>
+            <p className="text-sm text-gray-500 mt-1.5 max-w-xl">
+              Aqui reunimos os imóveis que desejamos conquistar, simulamos cada cenário com sabedoria e colocamos esse sonho diante de Deus em oração.
+            </p>
+          </div>
+          
+          <div className="flex shrink-0 w-full md:w-auto">
+            <button
+              onClick={onAddHouse}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm w-full md:w-auto"
+            >
+              <Plus size={20} />
+              <span>Novo Cenário</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={onAddHouse}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
-        >
-          <Plus size={18} />
-          <span>Novo Cenário</span>
-        </button>
+
+        <div className="flex flex-row items-center gap-3">
+          <div className="bg-gray-50 px-4 py-2.5 rounded-xl flex items-center justify-between md:justify-start gap-4 border border-gray-100 shadow-sm w-full md:w-auto">
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Imóveis</p>
+              <p className="text-lg font-black text-gray-700 leading-none">{houses.length}</p>
+            </div>
+            
+            <div className="w-px h-8 bg-gray-200"></div>
+            
+            <div className="flex items-center gap-2">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Guardado (Global)</p>
+                {isEditingGlobalSaved ? (
+                  <input
+                    type="number"
+                    autoFocus
+                    className="w-24 text-lg font-black text-emerald-600 bg-white border border-gray-300 rounded px-1.5 min-w-0"
+                    value={tempGlobalSaved}
+                    onChange={(e) => setTempGlobalSaved(e.target.value)}
+                    onBlur={handleSaveGlobalAmount}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveGlobalAmount();
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-black text-emerald-600 leading-none">{formatCurrency(globalHousesSavedAmount)}</p>
+                    <button
+                      onClick={() => {
+                        setTempGlobalSaved(globalHousesSavedAmount.toString());
+                        setIsEditingGlobalSaved(true);
+                      }}
+                      className="text-gray-400 hover:text-emerald-600 transition-colors bg-white rounded-md p-1 shadow-sm border border-gray-100"
+                      title="Ajustar Guardado"
+                    >
+                      <Edit2 size={12} strokeWidth={3} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -122,7 +182,7 @@ export function HouseSimulator({
               house.downPaymentTarget + financedAmount + totalInterest;
             const downPaymentProgress =
               house.downPaymentTarget > 0
-                ? (house.downPaymentSaved / house.downPaymentTarget) * 100
+                ? (globalHousesSavedAmount / house.downPaymentTarget) * 100
                 : 0;
 
             const isEditing = editingId === house.id;
@@ -137,32 +197,37 @@ export function HouseSimulator({
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Image Section */}
-                  <div className="w-full md:w-1/3 bg-gray-50 relative min-h-[220px] border-b md:border-b-0 md:border-r border-gray-100 flex flex-col justify-center items-center">
-                    {house.imageUrl ? (
-                      <img
-                        src={house.imageUrl}
-                        alt={house.propertyName}
-                        className="w-full h-full object-cover absolute inset-0"
-                      />
-                    ) : (
-                      <div className="text-gray-300 flex flex-col items-center gap-2 p-6 z-10 w-full">
-                        <Home size={48} />
-                        <span className="text-sm font-medium">Sem imagem</span>
-                      </div>
-                    )}
+                  <div className="w-full md:w-1/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50">
+                    <div className="relative w-full min-h-[220px] flex-1 flex items-center justify-center overflow-hidden bg-gray-100">
+                      {house.imageUrl ? (
+                        <img
+                          src={house.imageUrl}
+                          alt={house.propertyName}
+                          className="w-full h-full object-cover absolute inset-0"
+                        />
+                      ) : (
+                        <div className="text-gray-300 flex flex-col items-center gap-2 p-6 z-10 w-full">
+                          <Home size={48} />
+                          <span className="text-sm font-medium">Sem imagem</span>
+                        </div>
+                      )}
+                    </div>
                     {isEditing && (
-                      <div className="absolute top-0 inset-x-0 p-3 flex flex-col gap-2 bg-gradient-to-b from-black/60 to-transparent z-20">
+                      <div className="p-4 bg-white border-t border-gray-100 space-y-3">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                          Alterar imagem
+                        </p>
                         <div className="relative flex items-center">
                           <ImageIcon
-                            className="absolute left-3 text-white/70"
+                            className="absolute left-3 text-gray-400"
                             size={16}
                           />
                           <input
                             type="text"
                             value={house.imageUrl || ""}
                             onChange={(e) => handleChange(e, house, "imageUrl")}
-                            placeholder="URL da imagem (ex: https://...)"
-                            className="bg-black/40 text-white placeholder-white/50 border border-white/20 rounded-lg py-1.5 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-sm"
+                            placeholder="URL da imagem"
+                            className="bg-white border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
                           />
                         </div>
                         <div className="relative flex items-center">
@@ -182,7 +247,7 @@ export function HouseSimulator({
                                 reader.readAsDataURL(file);
                               }
                             }}
-                            className="text-xs text-white/80 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-semibold file:bg-white/20 file:text-white hover:file:bg-white/30 truncate w-full"
+                            className="text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 w-full cursor-pointer"
                           />
                         </div>
                       </div>
@@ -215,11 +280,11 @@ export function HouseSimulator({
                             onClick={() =>
                               setEditingId(isEditing ? null : house.id)
                             }
-                            className={`p-2 rounded-full transition-all ${isEditing ? "bg-indigo-600 text-white shadow-sm" : "text-gray-500 hover:bg-gray-200 hover:text-gray-900"}`}
+                            className={`p-2 rounded-full transition-all ${isEditing ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-gray-500 hover:bg-indigo-50 hover:text-indigo-600"}`}
                             title={isEditing ? "Salvar" : "Editar"}
                           >
                             {isEditing ? (
-                              <Calculator size={16} />
+                              <Check size={16} strokeWidth={3} />
                             ) : (
                               <Edit2 size={16} />
                             )}
@@ -259,7 +324,7 @@ export function HouseSimulator({
 
                           <div className="space-y-3">
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
-                              <span className="text-gray-500 font-medium">Entrada Alvo</span>
+                              <span className="text-gray-500 font-medium">Entrada</span>
                               {isEditing ? (
                                 <input
                                   type="number"
@@ -294,23 +359,12 @@ export function HouseSimulator({
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
                               <span className="text-gray-500 font-medium">Guardado</span>
-                              {isEditing ? (
-                                <input
-                                  type="number"
-                                  value={house.downPaymentSaved || ""}
-                                  onChange={(e) =>
-                                    handleChange(e, house, "downPaymentSaved")
-                                  }
-                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
-                                />
-                              ) : (
-                                <span className="font-bold text-emerald-600">{formatCurrency(house.downPaymentSaved)}</span>
-                              )}
+                              <span className="font-bold text-emerald-600">{formatCurrency(globalHousesSavedAmount)}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
                               <span className="text-gray-500 font-medium">Falta</span>
                               <span className="font-bold text-orange-500">
-                                {formatCurrency(Math.max(0, house.downPaymentTarget - (house.downPaymentSaved || 0)))}
+                                {formatCurrency(Math.max(0, house.downPaymentTarget - globalHousesSavedAmount))}
                               </span>
                             </div>
                           </div>
@@ -415,13 +469,13 @@ export function HouseSimulator({
                           </div>
 
                           <div className="pt-5 border-t border-slate-200/60 mt-auto">
-                            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
                               {house.amortizationType === "SAC"
                                 ? "Primeira Parcela"
                                 : "Parcela Fixa"}
                             </p>
                             <div className="mb-2">
-                              <p className="text-3xl font-black text-indigo-600 tracking-tight leading-none">
+                              <p className="text-2xl font-black text-slate-900 tracking-tight leading-none">
                                 {house.installments > 0
                                   ? formatCurrency(first)
                                   : "R$ 0,00"}
@@ -433,8 +487,8 @@ export function HouseSimulator({
                                   </p>
                                 )}
                             </div>
-                            <p className="text-xs text-slate-500 font-medium mt-3 pt-3 border-t border-slate-200/50">
-                              Custo Final: <span className="font-bold text-slate-700">{formatCurrency(totalCost)}</span>
+                            <p className="text-sm text-slate-500 font-medium mt-3 pt-3 border-t border-slate-200/50">
+                              Custo Final: <span className="font-bold text-slate-900">{formatCurrency(totalCost)}</span>
                               <span className="block mt-0.5 text-[10px]">
                                 Juros totais: {formatCurrency(totalInterest)}
                               </span>
