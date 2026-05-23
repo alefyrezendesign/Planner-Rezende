@@ -91,20 +91,28 @@ export default function App() {
 
   const syncUserMetadata = (currentSession: Session) => {
     const meta = currentSession.user?.user_metadata || {};
+    const carsLocally = localStorage.getItem("global_cars_saved");
+    const housesLocally = localStorage.getItem("global_houses_saved");
+
     if (meta.global_cars_saved !== undefined) {
       const val = Number(meta.global_cars_saved);
       setGlobalCarsSavedAmount(val);
       localStorage.setItem("global_cars_saved", val.toString());
+    } else if (carsLocally) {
+      supabase.auth.updateUser({ data: { global_cars_saved: Number(carsLocally) } });
     }
+
     if (meta.global_houses_saved !== undefined) {
       const val = Number(meta.global_houses_saved);
       setGlobalHousesSavedAmount(val);
       localStorage.setItem("global_houses_saved", val.toString());
+    } else if (housesLocally) {
+      supabase.auth.updateUser({ data: { global_houses_saved: Number(housesLocally) } });
     }
   };
 
   // Load all cloud data
-  const loadData = async (userId: string) => {
+  const loadData = async (userId: string, currentSession?: Session) => {
     setSyncing(true);
     try {
       const [fetchedTasks, fetchedCars, fetchedHouses] = await Promise.all([
@@ -115,6 +123,29 @@ export default function App() {
       setTasks(fetchedTasks);
       setCars(fetchedCars);
       setHouses(fetchedHouses);
+
+      // Migrate legacy database values to global amount if not already set globally
+      const meta = currentSession?.user?.user_metadata || session?.user?.user_metadata || {};
+      const carsLocally = localStorage.getItem("global_cars_saved");
+      const housesLocally = localStorage.getItem("global_houses_saved");
+
+      if (meta.global_cars_saved === undefined && !carsLocally && fetchedCars.length > 0) {
+        const legacyCarSaved = Math.max(0, ...fetchedCars.map(c => c.downPaymentSaved || 0));
+        if (legacyCarSaved > 0) {
+          setGlobalCarsSavedAmount(legacyCarSaved);
+          localStorage.setItem("global_cars_saved", legacyCarSaved.toString());
+          await supabase.auth.updateUser({ data: { global_cars_saved: legacyCarSaved } });
+        }
+      }
+
+      if (meta.global_houses_saved === undefined && !housesLocally && fetchedHouses.length > 0) {
+        const legacyHouseSaved = Math.max(0, ...fetchedHouses.map(h => h.downPaymentSaved || 0));
+        if (legacyHouseSaved > 0) {
+          setGlobalHousesSavedAmount(legacyHouseSaved);
+          localStorage.setItem("global_houses_saved", legacyHouseSaved.toString());
+          await supabase.auth.updateUser({ data: { global_houses_saved: legacyHouseSaved } });
+        }
+      }
     } catch (err: any) {
       console.error("Erro ao carregar dados do Supabase:", err);
     } finally {
@@ -134,7 +165,7 @@ export default function App() {
       setNeedsAuth(!session);
       if (session) {
         syncUserMetadata(session);
-        loadData(session.user.id);
+        loadData(session.user.id, session);
       } else {
         setIsInitializing(false);
       }
@@ -156,7 +187,7 @@ export default function App() {
       setNeedsAuth(!session);
       if (session) {
         syncUserMetadata(session);
-        loadData(session.user.id);
+        loadData(session.user.id, session);
       } else {
         setIsInitializing(false);
       }
