@@ -15,11 +15,15 @@ import { formatCurrency, calculateProgress } from "../utils";
 
 interface TaskCardProps {
   task: Task;
+  index?: number;
+  totalTasks?: number;
   onUpdate: (task: Task) => void;
   onEditClick: (task: Task) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
-export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
+export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onMoveUp, onMoveDown }: TaskCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleSubtask = (subtaskId: string) => {
@@ -155,13 +159,36 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
       <div className="p-4 sm:p-5">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-2 mb-2.5">
-              <span
-                className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${getPriorityColor(task.priority)}`}
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5">
+              {index !== undefined && totalTasks !== undefined && (
+                <div className="flex items-center bg-white border border-gray-200 rounded h-[22px] shadow-sm">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+                    disabled={index === 1}
+                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-r border-gray-200 ${index === 1 ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
+                    title="Mover para cima"
+                  >
+                    <ChevronUp size={12} strokeWidth={3} />
+                  </button>
+                  <div className="h-full px-1.5 sm:px-2 flex items-center justify-center text-[10px] font-bold text-gray-700 bg-gray-50/50 min-w-[20px] sm:min-w-[26px] select-none">
+                    {index}º
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+                    disabled={index === totalTasks}
+                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-l border-gray-200 ${index === totalTasks ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
+                    title="Mover para baixo"
+                  >
+                    <ChevronDown size={12} strokeWidth={3} />
+                  </button>
+                </div>
+              )}
+              <div
+                className={`flex items-center h-[22px] text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 border rounded ${getPriorityColor(task.priority)}`}
               >
                 {task.priority}
-              </span>
-              <div className="relative inline-flex items-center">
+              </div>
+              <div className="relative inline-flex items-center h-[22px]">
                 <select
                   value={task.status}
                   onChange={(e) =>
@@ -170,7 +197,7 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
                       status: e.target.value as Task["status"],
                     })
                   }
-                  className={`text-[10px] uppercase font-bold tracking-wider pl-2 pr-5 py-0.5 rounded border focus:outline-none appearance-none cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(task.status)}`}
+                  className={`h-full text-[9px] sm:text-[10px] uppercase font-bold tracking-wider pl-1.5 pr-4 sm:pl-2 sm:pr-5 rounded border focus:outline-none appearance-none cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(task.status)}`}
                 >
                   <option value="Não iniciado">NÃO INICIADO</option>
                   <option value="Em andamento">EM ANDAMENTO</option>
@@ -178,10 +205,10 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
                   <option value="Concluído">CONCLUÍDO</option>
                 </select>
                 <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center opacity-50">
-                  <ChevronDown size={12} />
+                  <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </div>
               </div>
-              <div className="flex items-center ml-auto sm:ml-2">
+              <div className="hidden sm:flex items-center ml-auto sm:ml-2">
                 {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
               </div>
             </div>
@@ -191,6 +218,10 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
             >
               {task.title}
             </h3>
+            
+            <div className="sm:hidden mt-2 mb-2">
+              {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
+            </div>
           </div>
           <button
             onClick={() => onEditClick(task)}

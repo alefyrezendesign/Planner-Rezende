@@ -19,6 +19,7 @@ import {
   Link2,
   Home,
   Wallet,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Auth } from "./components/Auth";
@@ -28,7 +29,28 @@ import * as api from "./api";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskOrder, setTaskOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("user_tasks_order");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [cars, setCars] = useState<CarScenario[]>([]);
+  const [globalCarsSavedAmount, setGlobalCarsSavedAmount] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("global_cars_saved");
+      return saved ? Number(saved) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const handleUpdateGlobalCarsSavedAmount = (val: number) => {
+    setGlobalCarsSavedAmount(val);
+    localStorage.setItem("global_cars_saved", val.toString());
+  };
   const [houses, setHouses] = useState<RealEstateScenario[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
@@ -210,8 +232,6 @@ export default function App() {
 
   const onDeleteCarData = async (id: string) => {
     if (!session?.user.id) return;
-    const confirm = window.confirm("Excluir este cenário de veículo?");
-    if (!confirm) return;
 
     const previousCars = [...cars];
     handleUpdateCars(cars.filter((c) => c.id !== id));
@@ -275,8 +295,6 @@ export default function App() {
 
   const onDeleteHouseData = async (id: string) => {
     if (!session?.user.id) return;
-    const confirm = window.confirm("Excluir este cenário de imóvel?");
-    if (!confirm) return;
     const previousHouses = [...houses];
     handleUpdateHouses(houses.filter((h) => h.id !== id));
     setSyncing(true);
@@ -295,36 +313,6 @@ export default function App() {
     return ["Todas", ...Array.from(cats).sort()];
   }, [tasks]);
 
-  const taskStats = useMemo(() => {
-    let notStarted = 0;
-    let inProgress = 0;
-    let completed = 0;
-
-    let subtasksPending = 0;
-    let subtasksCompleted = 0;
-
-    tasks.forEach((task) => {
-      if (task.status === "Não iniciado") notStarted++;
-      else if (task.status === "Em andamento") inProgress++;
-      else if (task.status === "Concluído") completed++;
-
-      task.subtasks.forEach((sub) => {
-        if (sub.completed) subtasksCompleted++;
-        else subtasksPending++;
-      });
-    });
-
-    return {
-      notStarted,
-      inProgress,
-      completed,
-      subtasksPending,
-      subtasksCompleted,
-      totalTasks: tasks.length,
-      totalSubtasks: subtasksPending + subtasksCompleted,
-    };
-  }, [tasks]);
-
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (selectedCategory !== "Todas") {
@@ -334,11 +322,49 @@ export default function App() {
     const priorityWeight = { Alta: 3, Média: 2, Baixa: 1 };
 
     return [...result].sort((a, b) => {
+      const indexA = taskOrder.indexOf(a.id);
+      const indexB = taskOrder.indexOf(b.id);
+      
+      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+
       if (a.status === "Concluído" && b.status !== "Concluído") return 1;
       if (a.status !== "Concluído" && b.status === "Concluído") return -1;
       return priorityWeight[b.priority] - priorityWeight[a.priority];
     });
-  }, [tasks, selectedCategory]);
+  }, [tasks, selectedCategory, taskOrder]);
+
+  const moveTask = (taskId: string, direction: "up" | "down") => {
+    const currentList = filteredTasks.map(t => t.id);
+    const index = currentList.indexOf(taskId);
+    if (index === -1) return;
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === currentList.length - 1) return;
+    
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    const newList = [...currentList];
+    [newList[index], newList[newIndex]] = [newList[newIndex], newList[index]];
+    
+    let newTaskOrder = [...taskOrder];
+    
+    // Add missing tasks to the end
+    tasks.forEach(t => {
+      if (!newTaskOrder.includes(t.id)) {
+        newTaskOrder.push(t.id);
+      }
+    });
+    
+    const globalIndexA = newTaskOrder.indexOf(newList[newIndex]);
+    const globalIndexB = newTaskOrder.indexOf(newList[index]);
+    
+    if (globalIndexA !== -1 && globalIndexB !== -1) {
+      [newTaskOrder[globalIndexA], newTaskOrder[globalIndexB]] = [newTaskOrder[globalIndexB], newTaskOrder[globalIndexA]];
+    }
+    
+    setTaskOrder(newTaskOrder);
+    localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
+  };
 
   if (isInitializing) {
     return (
@@ -404,40 +430,6 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <DashboardStats tasks={tasks} />
-
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-          <div className="flex flex-wrap items-center gap-3 text-[13px] font-medium">
-            <span className="text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200/60 shadow-sm">
-              {taskStats.totalTasks} Tarefas
-            </span>
-            <div className="flex items-center gap-2 text-gray-500">
-              <span className="text-gray-600">
-                {taskStats.notStarted} Fazer
-              </span>
-              <span className="text-gray-300">•</span>
-              <span className="text-blue-600">
-                {taskStats.inProgress} Fazendo
-              </span>
-              <span className="text-gray-300">•</span>
-              <span className="text-green-600">
-                {taskStats.completed} Feitas
-              </span>
-            </div>
-          </div>
-          <div className="hidden sm:block w-px h-4 bg-gray-300 mx-1"></div>
-          <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500 uppercase tracking-wider font-semibold">
-            <span>{taskStats.totalSubtasks} Subtarefas:</span>
-            <span className="text-gray-400">
-              {taskStats.subtasksPending} Pendentes
-            </span>
-            <span className="text-gray-300">/</span>
-            <span className="text-green-600">
-              {taskStats.subtasksCompleted} Concluídas
-            </span>
-          </div>
-        </div>
-
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -451,6 +443,8 @@ export default function App() {
             ) : activeTab === "cars" ? (
               <CarSimulator
                 cars={cars}
+                globalCarsSavedAmount={globalCarsSavedAmount}
+                onUpdateGlobalCarsSavedAmount={handleUpdateGlobalCarsSavedAmount}
                 onAddCar={handleAddCar}
                 onUpdateCar={onUpdateCarData}
                 onDeleteCar={onDeleteCarData}
@@ -464,28 +458,36 @@ export default function App() {
               />
             ) : (
               <>
+                <DashboardStats tasks={tasks} />
+                
                 {/* Category Filters */}
-                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="overflow-x-auto hide-scrollbar flex-1">
-                    <div className="flex gap-2 pb-2">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                            selectedCategory === cat
-                              ? "bg-gray-900 text-white shadow-sm"
-                              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full overflow-hidden">
+                  <div className="flex items-center w-full min-w-0">
+                    <div className="overflow-x-auto w-full hide-scrollbar pb-1 sm:pb-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+                      <div className="flex flex-nowrap items-center gap-2">
+                        {categories.map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
+                              selectedCategory === cat
+                                ? "bg-gray-900 text-white shadow-sm"
+                                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Seta lateral indicando que tem mais no mobile */}
+                    <div className="sm:hidden flex items-center justify-center pl-2 text-gray-400 shrink-0 pb-1">
+                      <ChevronRight size={20} strokeWidth={2.5} />
                     </div>
                   </div>
                   <button
                     onClick={handleCreateNewTask}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium flex-shrink-0 transition-colors shadow-sm"
+                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm w-full sm:w-auto"
                   >
                     <Plus size={18} />
                     Nova Tarefa
@@ -523,12 +525,16 @@ export default function App() {
                         </button>
                       </motion.div>
                     ) : (
-                      filteredTasks.map((task) => (
+                      filteredTasks.map((task, idx) => (
                         <TaskCard
                           key={task.id}
                           task={task}
+                          index={idx + 1}
+                          totalTasks={filteredTasks.length}
                           onUpdate={handleUpdateTask}
                           onEditClick={setEditingTask}
+                          onMoveUp={() => moveTask(task.id, "up")}
+                          onMoveDown={() => moveTask(task.id, "down")}
                         />
                       ))
                     )}

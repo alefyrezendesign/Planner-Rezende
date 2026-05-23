@@ -234,248 +234,213 @@ export function HouseSimulator({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Valores Base */}
-                        <div className="space-y-4">
-                          <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-100">
-                            <div className="mb-3">
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
-                                Valor do Imóvel
-                              </label>
+                        <div className="flex flex-col justify-start">
+                          <div className="mb-5">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">
+                              Valor do Imóvel
+                            </label>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                value={house.propertyValue || ""}
+                                onChange={(e) =>
+                                  handleChange(e, house, "propertyValue")
+                                }
+                                className="w-full max-w-xs px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                              />
+                            ) : (
+                              <p className="text-2xl font-black text-gray-800 tracking-tight">
+                                {formatCurrency(house.propertyValue)}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
+                              <span className="text-gray-500 font-medium">Entrada Alvo</span>
                               {isEditing ? (
                                 <input
                                   type="number"
-                                  value={house.propertyValue || ""}
+                                  value={house.downPaymentTarget || ""}
                                   onChange={(e) =>
-                                    handleChange(e, house, "propertyValue")
+                                    handleChange(
+                                      e,
+                                      house,
+                                      "downPaymentTarget",
+                                    )
                                   }
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
                                 />
                               ) : (
-                                <p className="text-xl font-bold text-gray-900">
-                                  {formatCurrency(house.propertyValue)}
-                                </p>
+                                <span className="font-bold text-gray-900">{formatCurrency(house.downPaymentTarget)}</span>
                               )}
                             </div>
-
-                            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200/60">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
-                                  Entrada Alvo
-                                </label>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    value={house.downPaymentTarget || ""}
-                                    onChange={(e) =>
-                                      handleChange(
-                                        e,
-                                        house,
-                                        "downPaymentTarget",
-                                      )
-                                    }
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
-                                  />
-                                ) : (
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    {formatCurrency(house.downPaymentTarget)}
-                                  </p>
-                                )}
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
-                                  Guardado
-                                </label>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    value={house.downPaymentSaved || ""}
-                                    onChange={(e) =>
-                                      handleChange(e, house, "downPaymentSaved")
-                                    }
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
-                                  />
-                                ) : (
-                                  <p className="text-sm font-bold text-green-600">
-                                    {formatCurrency(house.downPaymentSaved)}
-                                  </p>
-                                )}
-                              </div>
+                            <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
+                              <span className="text-gray-500 font-medium">Subsídio (MCMV)</span>
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={house.subsidy || ""}
+                                  onChange={(e) =>
+                                    handleChange(e, house, "subsidy")
+                                  }
+                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
+                                />
+                              ) : (
+                                <span className="font-bold text-gray-900">{formatCurrency(house.subsidy)}</span>
+                              )}
                             </div>
-
-                            <div className="grid grid-cols-1 pt-3 mt-3 border-t border-gray-200/60">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
-                                  Subsídio (Minha Casa Minha Vida)
-                                </label>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    value={house.subsidy || ""}
-                                    onChange={(e) =>
-                                      handleChange(e, house, "subsidy")
-                                    }
-                                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
-                                  />
-                                ) : (
-                                  <p className="text-sm font-semibold text-gray-900">
-                                    {formatCurrency(house.subsidy)}
-                                  </p>
-                                )}
-                              </div>
+                            <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
+                              <span className="text-gray-500 font-medium">Guardado</span>
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={house.downPaymentSaved || ""}
+                                  onChange={(e) =>
+                                    handleChange(e, house, "downPaymentSaved")
+                                  }
+                                  className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
+                                />
+                              ) : (
+                                <span className="font-bold text-emerald-600">{formatCurrency(house.downPaymentSaved)}</span>
+                              )}
                             </div>
-
-                            {!isEditing && house.downPaymentTarget > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-200/60">
-                                <div className="flex justify-between text-[10px] font-medium mb-1.5">
-                                  <span className="text-gray-500 uppercase tracking-widest">
-                                    Progresso da Entrada
-                                  </span>
-                                  <span
-                                    className={
-                                      downPaymentProgress >= 100
-                                        ? "text-green-600"
-                                        : "text-indigo-600"
-                                    }
-                                  >
-                                    {Math.min(
-                                      100,
-                                      Math.round(downPaymentProgress),
-                                    )}
-                                    %
-                                  </span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                                  <div
-                                    className={`h-1.5 rounded-full transition-all duration-500 ${downPaymentProgress >= 100 ? "bg-green-500" : "bg-indigo-500"}`}
-                                    style={{
-                                      width: `${Math.min(100, downPaymentProgress)}%`,
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-                            )}
+                            <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
+                              <span className="text-gray-500 font-medium">Falta</span>
+                              <span className="font-bold text-orange-500">
+                                {formatCurrency(Math.max(0, house.downPaymentTarget - (house.downPaymentSaved || 0)))}
+                              </span>
+                            </div>
                           </div>
+
+                          {!isEditing && house.downPaymentTarget > 0 && (
+                            <div className="mt-4 pt-1">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                  Progresso
+                                </span>
+                                <span
+                                  className={`text-[10px] font-bold ${
+                                    downPaymentProgress >= 100
+                                      ? "text-emerald-500"
+                                      : "text-indigo-500"
+                                  }`}
+                                >
+                                  {Math.min(
+                                    100,
+                                    Math.round(downPaymentProgress),
+                                  )}
+                                  %
+                                </span>
+                              </div>
+                              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${downPaymentProgress >= 100 ? "bg-emerald-500" : "bg-indigo-500"}`}
+                                  style={{
+                                    width: `${Math.min(100, downPaymentProgress)}%`,
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Financiamento */}
-                        <div className="space-y-4">
-                          <div className="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
-                            <div className="grid grid-cols-2 gap-3 mb-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">
-                                  Juros (a.a)
-                                </label>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={house.interestRateAnnual || ""}
-                                    onChange={(e) =>
-                                      handleChange(
-                                        e,
-                                        house,
-                                        "interestRateAnnual",
-                                      )
-                                    }
-                                    className="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-sm bg-white"
-                                  />
-                                ) : (
-                                  <p className="text-sm font-semibold text-indigo-900">
-                                    {house.interestRateAnnual}%
-                                  </p>
-                                )}
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">
-                                  Prazo
-                                </label>
-                                {isEditing ? (
-                                  <input
-                                    type="number"
-                                    value={house.installments || ""}
-                                    onChange={(e) =>
-                                      handleChange(e, house, "installments")
-                                    }
-                                    className="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-sm bg-white"
-                                  />
-                                ) : (
-                                  <p className="text-sm font-semibold text-indigo-900">
-                                    {house.installments}x
-                                  </p>
-                                )}
-                              </div>
+                        <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 flex flex-col justify-between h-full">
+                          <div className="space-y-3 mb-6">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-500 font-medium">Valor a financiar</span>
+                              <span className="font-bold text-slate-900">{formatCurrency(financedAmount)}</span>
                             </div>
-
-                            <div className="mb-3">
-                              <label className="block text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5">
-                                Sistema de Amortização
-                              </label>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-500 font-medium">Juros (a.a)</span>
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={house.interestRateAnnual || ""}
+                                  onChange={(e) =>
+                                    handleChange(
+                                      e,
+                                      house,
+                                      "interestRateAnnual",
+                                    )
+                                  }
+                                  className="w-20 px-2 py-1 border border-slate-300 rounded text-right text-sm bg-white"
+                                />
+                              ) : (
+                                <span className="font-bold text-slate-900">
+                                  {house.interestRateAnnual}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-500 font-medium">Prazo</span>
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={house.installments || ""}
+                                  onChange={(e) =>
+                                    handleChange(e, house, "installments")
+                                  }
+                                  className="w-20 px-2 py-1 border border-slate-300 rounded text-right text-sm bg-white"
+                                />
+                              ) : (
+                                <span className="font-bold text-slate-900">
+                                  {house.installments}x
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-slate-500 font-medium">Amortização</span>
                               {isEditing ? (
                                 <select
                                   value={house.amortizationType}
                                   onChange={(e) =>
                                     handleChange(e, house, "amortizationType")
                                   }
-                                  className="w-full px-2 py-1.5 border border-indigo-200 rounded-lg text-sm bg-white focus:outline-none focus:border-indigo-500"
+                                  className="w-24 px-2 py-1 border border-slate-300 rounded text-sm bg-white focus:outline-none"
                                 >
-                                  <option value="SAC">SAC (Decrescente)</option>
-                                  <option value="PRICE">PRICE (Fixa)</option>
+                                  <option value="SAC">SAC</option>
+                                  <option value="PRICE">PRICE</option>
                                 </select>
                               ) : (
-                                <p className="text-sm font-semibold text-indigo-900 bg-white border border-indigo-100 rounded-lg px-2 py-1 inline-flex uppercase">
-                                  {house.amortizationType === "SAC"
-                                    ? "SAC"
-                                    : "PRICE"}
-                                </p>
+                                <span className="font-bold text-slate-900 uppercase">
+                                  {house.amortizationType}
+                                </span>
                               )}
                             </div>
+                          </div>
 
-                            <div className="pt-3 border-t border-indigo-200/50">
-                              <label className="block text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">
-                                Valor a Financiar
-                              </label>
-                              <p className="text-lg font-bold text-indigo-950">
-                                {formatCurrency(financedAmount)}
+                          <div className="pt-5 border-t border-slate-200/60 mt-auto">
+                            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">
+                              {house.amortizationType === "SAC"
+                                ? "Primeira Parcela"
+                                : "Parcela Fixa"}
+                            </p>
+                            <div className="mb-2">
+                              <p className="text-3xl font-black text-indigo-600 tracking-tight leading-none">
+                                {house.installments > 0
+                                  ? formatCurrency(first)
+                                  : "R$ 0,00"}
                               </p>
+                              {house.amortizationType === "SAC" &&
+                                house.installments > 0 && (
+                                  <p className="text-[11px] font-medium text-slate-500 mt-1">
+                                    Última: {formatCurrency(last)}
+                                  </p>
+                                )}
                             </div>
+                            <p className="text-xs text-slate-500 font-medium mt-3 pt-3 border-t border-slate-200/50">
+                              Custo Final: <span className="font-bold text-slate-700">{formatCurrency(totalCost)}</span>
+                              <span className="block mt-0.5 text-[10px]">
+                                Juros totais: {formatCurrency(totalInterest)}
+                              </span>
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Resultado Final */}
-                    <div className="mt-5 bg-gray-900 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-center gap-4 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                      <div className="z-10 w-full sm:w-auto text-center sm:text-left">
-                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">
-                          {house.amortizationType === "SAC"
-                            ? "Primeira Parcela"
-                            : "Parcela Fixa"}
-                        </p>
-                        <p className="text-2xl font-bold text-white">
-                          {house.installments > 0
-                            ? formatCurrency(first)
-                            : "R$ 0,00"}
-                        </p>
-                        {house.amortizationType === "SAC" &&
-                          house.installments > 0 && (
-                            <p className="text-gray-500 text-xs mt-1">
-                              Última: {formatCurrency(last)}
-                            </p>
-                          )}
-                      </div>
-                      <div className="hidden sm:block h-12 w-px bg-gray-700/50 z-10"></div>
-                      <div className="z-10 w-full sm:w-auto text-center sm:text-right border-t sm:border-t-0 border-gray-700/50 pt-4 sm:pt-0">
-                        <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">
-                          Custo Final Total
-                        </p>
-                        <p className="text-xl font-bold text-white">
-                          {formatCurrency(totalCost)}
-                        </p>
-                        <p className="text-gray-500 text-xs mt-1">
-                          Juros totais: {formatCurrency(totalInterest)}
-                        </p>
                       </div>
                     </div>
                   </div>
