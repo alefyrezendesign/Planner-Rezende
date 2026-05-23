@@ -9,6 +9,7 @@ import {
   ListTodo,
   CalendarClock,
   Wallet,
+  GripVertical,
 } from "lucide-react";
 import { Task, Subtask } from "../types";
 import { formatCurrency, calculateProgress } from "../utils";
@@ -21,9 +22,33 @@ interface TaskCardProps {
   onEditClick: (task: Task) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  isDragging?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragEnd?: () => void;
+  onDrop?: (e: React.DragEvent) => void;
+  onTouchStart?: (e: React.TouchEvent) => void;
+  onTouchMove?: (e: React.TouchEvent) => void;
+  onTouchEnd?: (e: React.TouchEvent) => void;
 }
 
-export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onMoveUp, onMoveDown }: TaskCardProps) {
+export function TaskCard({
+  task,
+  index,
+  totalTasks,
+  onUpdate,
+  onEditClick,
+  onMoveUp,
+  onMoveDown,
+  isDragging,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop,
+  onTouchStart,
+  onTouchMove,
+  onTouchEnd,
+}: TaskCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleSubtask = (subtaskId: string) => {
@@ -150,37 +175,44 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onMov
   const completedSubtasks = task.subtasks.filter((st) => st.completed).length;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-shadow hover:shadow-md ${task.status === "Concluído" ? "border-green-200 bg-green-50/30" : "border-gray-200"}`}
+    <div
+      draggable={true}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDrop={onDrop}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      className="outline-none"
     >
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        data-task-index={index !== undefined ? index - 1 : undefined}
+        className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-all duration-200 ${
+          isDragging 
+            ? "border-blue-400 bg-blue-50/20 shadow-md ring-2 ring-blue-500/10 scale-[1.01] opacity-60" 
+            : task.status === "Concluído" 
+              ? "border-green-200 bg-green-50/30 hover:shadow-md" 
+              : "border-gray-200 hover:shadow-md"
+        }`}
+      >
       <div className="p-4 sm:p-5">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5">
-              {index !== undefined && totalTasks !== undefined && (
-                <div className="flex items-center bg-white border border-gray-200 rounded h-[22px] shadow-sm">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
-                    disabled={index === 1}
-                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-r border-gray-200 ${index === 1 ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
-                    title="Mover para cima"
-                  >
-                    <ChevronUp size={12} strokeWidth={3} />
-                  </button>
-                  <div className="h-full px-1.5 sm:px-2 flex items-center justify-center text-[10px] font-bold text-gray-700 bg-gray-50/50 min-w-[20px] sm:min-w-[26px] select-none">
+              {index !== undefined && (
+                <div 
+                  className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 border border-gray-200 rounded-md h-[22px] px-1.5 shadow-sm select-none cursor-grab active:cursor-grabbing text-gray-500 transition-colors shrink-0 touch-none"
+                  title="Arraste para reordenar"
+                >
+                  <GripVertical size={11} strokeWidth={2.5} className="text-gray-400" />
+                  <span className="text-[10px] font-bold text-gray-700">
                     {index}º
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
-                    disabled={index === totalTasks}
-                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-l border-gray-200 ${index === totalTasks ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
-                    title="Mover para baixo"
-                  >
-                    <ChevronDown size={12} strokeWidth={3} />
-                  </button>
+                  </span>
                 </div>
               )}
               <div
@@ -339,5 +371,6 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onMov
         )}
       </AnimatePresence>
     </motion.div>
+  </div>
   );
 }
