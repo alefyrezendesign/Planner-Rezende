@@ -42,6 +42,7 @@ export default function App() {
   const [needsAuth, setNeedsAuth] = useState(true);
   const [isInitializing, setIsInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   // Load all cloud data
   const loadData = async (userId: string) => {
@@ -355,35 +356,37 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-gray-900 font-sans pb-28">
+    <div className="min-h-screen bg-neutral-50 text-gray-900 font-sans pb-32 sm:pb-28">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo.webp" 
-              alt="Replanner" 
-              className="h-16 object-contain"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-            <div className="hidden flex items-center gap-3">
-              <div className="bg-white shrink-0">
-                <img src="/favicon.png" alt="Icon" className="w-8 h-8 object-contain" />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                {!logoError ? (
+                  <img 
+                    src="/logo.webp" 
+                    alt="Replanner" 
+                    className="h-12 sm:h-16 object-contain"
+                    onError={() => setLogoError(true)}
+                  />
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white shrink-0">
+                      <img src="/favicon.png" alt="Icon" className="w-8 h-8 object-contain" />
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                      Replanner
+                    </h1>
+                  </div>
+                )}
+                {syncing && (
+                  <Loader2 size={14} className="animate-spin text-gray-400" />
+                )}
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                  Replanner
-                  {syncing && (
-                    <Loader2 size={14} className="animate-spin text-gray-400" />
-                  )}
-                </h1>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">
-                  Deus conduz nossos planos
-                </p>
-              </div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-1">
+                Deus conduz nossos projetos.
+              </p>
             </div>
           </div>
 
@@ -403,7 +406,7 @@ export default function App() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <DashboardStats tasks={tasks} />
 
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center px-4 gap-4">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <div className="flex flex-wrap items-center gap-3 text-[13px] font-medium">
             <span className="text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200/60 shadow-sm">
               {taskStats.totalTasks} Tarefas
@@ -549,35 +552,37 @@ export default function App() {
       )}
 
       {/* Fixed Bottom Navigation */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200 p-1.5 flex items-center gap-1">
-        <button
-          onClick={() => setActiveTab("tasks")}
-          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "tasks" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
-        >
-          <ListTodo size={18} />
-          Tarefas
-        </button>
-        <button
-          onClick={() => setActiveTab("cars")}
-          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "cars" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
-        >
-          <Car size={18} />
-          Veículos
-        </button>
-        <button
-          onClick={() => setActiveTab("houses")}
-          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "houses" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
-        >
-          <Home size={18} />
-          Imóveis
-        </button>
-        <button
-          onClick={() => setActiveTab("finances")}
-          className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${activeTab === "finances" ? "bg-white text-gray-900 border border-gray-200 shadow-sm" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 border border-transparent"}`}
-        >
-          <Wallet size={18} />
-          Finanças
-        </button>
+      <div className="fixed bottom-0 left-0 w-full sm:w-auto sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 z-40 bg-white/95 sm:bg-white/90 backdrop-blur-md pb-[env(safe-area-inset-bottom)] sm:pb-0 sm:rounded-2xl shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.1)] sm:shadow-lg border-t sm:border border-gray-200 transition-all">
+        <div className="flex items-center justify-around sm:justify-center p-2 sm:p-1.5 gap-1 max-w-md mx-auto sm:max-w-none">
+          <button
+            onClick={() => setActiveTab("tasks")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-2.5 sm:px-4 rounded-xl text-[10px] sm:text-sm font-medium transition-all flex-1 sm:flex-none ${activeTab === "tasks" ? "text-blue-600 sm:text-gray-900 sm:bg-white sm:border sm:border-gray-200 sm:shadow-sm" : "text-gray-500 hover:text-gray-700 sm:hover:bg-gray-50/50 sm:border sm:border-transparent"}`}
+          >
+            <ListTodo className="w-5 h-5 sm:w-[18px] sm:h-[18px]" />
+            <span>Tarefas</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("cars")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-2.5 sm:px-4 rounded-xl text-[10px] sm:text-sm font-medium transition-all flex-1 sm:flex-none ${activeTab === "cars" ? "text-blue-600 sm:text-gray-900 sm:bg-white sm:border sm:border-gray-200 sm:shadow-sm" : "text-gray-500 hover:text-gray-700 sm:hover:bg-gray-50/50 sm:border sm:border-transparent"}`}
+          >
+            <Car className="w-5 h-5 sm:w-[18px] sm:h-[18px]" />
+            <span>Veículos</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("houses")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-2.5 sm:px-4 rounded-xl text-[10px] sm:text-sm font-medium transition-all flex-1 sm:flex-none ${activeTab === "houses" ? "text-blue-600 sm:text-gray-900 sm:bg-white sm:border sm:border-gray-200 sm:shadow-sm" : "text-gray-500 hover:text-gray-700 sm:hover:bg-gray-50/50 sm:border sm:border-transparent"}`}
+          >
+            <Home className="w-5 h-5 sm:w-[18px] sm:h-[18px]" />
+            <span>Imóveis</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("finances")}
+            className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 p-2 sm:py-2.5 sm:px-4 rounded-xl text-[10px] sm:text-sm font-medium transition-all flex-1 sm:flex-none ${activeTab === "finances" ? "text-blue-600 sm:text-gray-900 sm:bg-white sm:border sm:border-gray-200 sm:shadow-sm" : "text-gray-500 hover:text-gray-700 sm:hover:bg-gray-50/50 sm:border sm:border-transparent"}`}
+          >
+            <Wallet className="w-5 h-5 sm:w-[18px] sm:h-[18px]" />
+            <span>Finanças</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ export const Auth = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,22 +38,22 @@ export const Auth = () => {
         className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden"
       >
         <div className="bg-white px-6 py-8 text-center flex flex-col items-center border-b border-gray-100">
-          <img 
-            src="/logo.webp" 
-            alt="Replanner" 
-            className="h-24 object-contain mb-6 w-[80%] max-w-[200px]"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-          <div className="hidden flex-col items-center w-full">
-            <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-white shadow-sm border border-gray-100">
-              <img src="/favicon.png" alt="Icon" className="w-10 h-10 object-contain" />
+          {!logoError ? (
+            <img 
+              src="/logo.webp" 
+              alt="Replanner" 
+              className="h-24 object-contain mb-3 w-[90%] max-w-[260px]"
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <div className="flex flex-col items-center w-full mb-3">
+              <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-white shadow-sm border border-gray-100">
+                <img src="/favicon.png" alt="Icon" className="w-10 h-10 object-contain" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Replanner</h2>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Replanner</h2>
-            <p className="text-gray-500 text-sm">Acesse sua conta para organizar sua vida.</p>
-          </div>
+          )}
+          <p className="text-gray-500 text-sm font-medium">Deus conduz nossos projetos.</p>
         </div>
         
         <form onSubmit={handleAuth} className="p-6 md:p-8">
