@@ -47,9 +47,14 @@ export default function App() {
     }
   });
 
-  const handleUpdateGlobalCarsSavedAmount = (val: number) => {
+  const handleUpdateGlobalCarsSavedAmount = async (val: number) => {
     setGlobalCarsSavedAmount(val);
     localStorage.setItem("global_cars_saved", val.toString());
+    if (session) {
+      await supabase.auth.updateUser({
+        data: { global_cars_saved: val }
+      });
+    }
   };
   const [houses, setHouses] = useState<RealEstateScenario[]>([]);
   const [globalHousesSavedAmount, setGlobalHousesSavedAmount] = useState<number>(() => {
@@ -61,9 +66,14 @@ export default function App() {
     }
   });
 
-  const handleUpdateGlobalHousesSavedAmount = (val: number) => {
+  const handleUpdateGlobalHousesSavedAmount = async (val: number) => {
     setGlobalHousesSavedAmount(val);
     localStorage.setItem("global_houses_saved", val.toString());
+    if (session) {
+      await supabase.auth.updateUser({
+        data: { global_houses_saved: val }
+      });
+    }
   };
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
@@ -78,6 +88,20 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [logoError, setLogoError] = useState(false);
+
+  const syncUserMetadata = (currentSession: Session) => {
+    const meta = currentSession.user?.user_metadata || {};
+    if (meta.global_cars_saved !== undefined) {
+      const val = Number(meta.global_cars_saved);
+      setGlobalCarsSavedAmount(val);
+      localStorage.setItem("global_cars_saved", val.toString());
+    }
+    if (meta.global_houses_saved !== undefined) {
+      const val = Number(meta.global_houses_saved);
+      setGlobalHousesSavedAmount(val);
+      localStorage.setItem("global_houses_saved", val.toString());
+    }
+  };
 
   // Load all cloud data
   const loadData = async (userId: string) => {
@@ -109,6 +133,7 @@ export default function App() {
       setSession(session);
       setNeedsAuth(!session);
       if (session) {
+        syncUserMetadata(session);
         loadData(session.user.id);
       } else {
         setIsInitializing(false);
@@ -130,6 +155,7 @@ export default function App() {
       setSession(session);
       setNeedsAuth(!session);
       if (session) {
+        syncUserMetadata(session);
         loadData(session.user.id);
       } else {
         setIsInitializing(false);
@@ -516,7 +542,7 @@ export default function App() {
                   </div>
                   <button
                     onClick={handleCreateNewTask}
-                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm w-full sm:w-auto"
+                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm w-full sm:w-auto whitespace-nowrap"
                   >
                     <Plus size={18} />
                     Nova Tarefa

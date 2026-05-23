@@ -101,7 +101,7 @@ export function HouseSimulator({
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900">
-              <Home className="text-indigo-600" size={28} />
+              <Home className="text-blue-600" size={28} />
               Lar da Promessa
             </h2>
             <p className="text-sm text-gray-500 mt-1.5 max-w-xl">
@@ -112,7 +112,7 @@ export function HouseSimulator({
           <div className="flex shrink-0 w-full md:w-auto">
             <button
               onClick={onAddHouse}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm w-full md:w-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm w-full md:w-auto"
             >
               <Plus size={20} />
               <span>Novo Cenário</span>
@@ -227,7 +227,7 @@ export function HouseSimulator({
                             value={house.imageUrl || ""}
                             onChange={(e) => handleChange(e, house, "imageUrl")}
                             placeholder="URL da imagem"
-                            className="bg-white border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                            className="bg-white border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                           />
                         </div>
                         <div className="relative flex items-center">
@@ -247,7 +247,7 @@ export function HouseSimulator({
                                 reader.readAsDataURL(file);
                               }
                             }}
-                            className="text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 w-full cursor-pointer"
+                            className="text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 w-full cursor-pointer"
                           />
                         </div>
                       </div>
@@ -267,7 +267,7 @@ export function HouseSimulator({
                                 handleChange(e, house, "propertyName")
                               }
                               placeholder="Nome/Endereço do Imóvel"
-                              className="text-2xl font-bold bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 w-full"
+                              className="text-2xl font-bold bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 w-full"
                             />
                           ) : (
                             <h3 className="text-2xl font-bold text-gray-900 tracking-tight leading-tight">
@@ -280,7 +280,7 @@ export function HouseSimulator({
                             onClick={() =>
                               setEditingId(isEditing ? null : house.id)
                             }
-                            className={`p-2 rounded-full transition-all ${isEditing ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-gray-500 hover:bg-indigo-50 hover:text-indigo-600"}`}
+                            className={`p-2 rounded-full transition-all ${isEditing ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-gray-500 hover:bg-blue-50 hover:text-blue-600"}`}
                             title={isEditing ? "Salvar" : "Editar"}
                           >
                             {isEditing ? (
@@ -379,7 +379,7 @@ export function HouseSimulator({
                                   className={`text-[10px] font-bold ${
                                     downPaymentProgress >= 100
                                       ? "text-emerald-500"
-                                      : "text-indigo-500"
+                                      : "text-blue-500"
                                   }`}
                                 >
                                   {Math.min(
@@ -391,7 +391,7 @@ export function HouseSimulator({
                               </div>
                               <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                                 <div
-                                  className={`h-full rounded-full transition-all duration-500 ${downPaymentProgress >= 100 ? "bg-emerald-500" : "bg-indigo-500"}`}
+                                  className={`h-full rounded-full transition-all duration-500 ${downPaymentProgress >= 100 ? "bg-emerald-500" : "bg-blue-500"}`}
                                   style={{
                                     width: `${Math.min(100, downPaymentProgress)}%`,
                                   }}

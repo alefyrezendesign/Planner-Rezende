@@ -5,6 +5,11 @@ import { Task, CarScenario, RealEstateScenario } from './types';
 // API Layer for Supabase (Frontend queries)
 // ==========================================
 
+export async function fetchProfile(userId: string) {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  return {data, error};
+}
+
 export async function fetchTasks(userId: string) {
   const { data, error } = await supabase
     .from('tasks')
