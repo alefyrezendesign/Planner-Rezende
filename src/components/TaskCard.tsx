@@ -8,6 +8,7 @@ import {
   Edit2,
   ListTodo,
   CalendarClock,
+  Wallet,
 } from "lucide-react";
 import { Task, Subtask } from "../types";
 import { formatCurrency, calculateProgress } from "../utils";
@@ -52,7 +53,57 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
     }
   };
 
-  const renderDueDateBadge = (dueDate?: string, isCompleted?: boolean) => {
+  const renderTaskDueDate = (dueDate?: string, isCompleted?: boolean) => {
+    if (!dueDate) {
+      return (
+        <div className="flex items-center gap-1.5 text-sm font-medium text-gray-400">
+          <CalendarClock size={16} /> <span>Sem prazo</span>
+        </div>
+      );
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate + "T00:00:00");
+    const diffTime = due.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (isCompleted) {
+      return (
+        <div className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
+          <CalendarClock size={16} /> <span>Prazo: {due.toLocaleDateString("pt-BR")}</span>
+        </div>
+      );
+    }
+
+    if (diffDays < 0) {
+      return (
+        <div className="flex items-center gap-1.5 text-sm text-red-600 font-bold">
+          <CalendarClock size={16} /> <span>Atrasado • {due.toLocaleDateString("pt-BR")}</span>
+        </div>
+      );
+    } else if (diffDays === 0) {
+      return (
+        <div className="flex items-center gap-1.5 text-sm text-orange-600 font-bold">
+          <CalendarClock size={16} /> <span>Vence Hoje</span>
+        </div>
+      );
+    } else if (diffDays <= 7) {
+      return (
+        <div className="flex items-center gap-1.5 text-sm text-yellow-600 font-bold">
+          <CalendarClock size={16} /> <span>Falta {diffDays} {diffDays === 1 ? "dia" : "dias"}</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-1.5 text-sm text-gray-700 font-semibold">
+        <CalendarClock size={16} /> <span>{due.toLocaleDateString("pt-BR")}</span>
+      </div>
+    );
+  };
+
+  const renderSubtaskDueDate = (dueDate?: string, isCompleted?: boolean) => {
     if (!dueDate) return null;
 
     const today = new Date();
@@ -64,7 +115,7 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
 
     if (isCompleted) {
       return (
-        <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border bg-gray-100 text-gray-500 border-gray-200">
+        <span className="flex items-center gap-1 text-[11px] font-medium text-gray-400">
           <CalendarClock size={12} /> {due.toLocaleDateString("pt-BR")}
         </span>
       );
@@ -72,27 +123,20 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
 
     if (diffDays < 0) {
       return (
-        <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-red-50 text-red-700 border-red-200">
-          <CalendarClock size={12} /> Atrasado ({Math.abs(diffDays)}d)
-        </span>
-      );
-    } else if (diffDays === 0) {
-      return (
-        <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-orange-50 text-orange-700 border-orange-200">
-          <CalendarClock size={12} /> Vence Hoje!
+        <span className="flex items-center gap-1 text-[11px] font-medium text-red-600">
+          <CalendarClock size={12} /> Atrasado
         </span>
       );
     } else if (diffDays <= 7) {
       return (
-        <span className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-yellow-50 text-yellow-700 border-yellow-200">
-          <CalendarClock size={12} /> Falta {diffDays}{" "}
-          {diffDays === 1 ? "dia" : "dias"}
+        <span className="flex items-center gap-1 text-[11px] font-medium text-orange-600">
+          <CalendarClock size={12} /> {due.toLocaleDateString("pt-BR")}
         </span>
       );
     }
 
     return (
-      <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border bg-gray-50 text-gray-600 border-gray-200">
+      <span className="flex items-center gap-1 text-[11px] font-medium text-gray-500">
         <CalendarClock size={12} /> {due.toLocaleDateString("pt-BR")}
       </span>
     );
@@ -111,31 +155,39 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
       <div className="p-4 sm:p-5">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2.5">
               <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${getPriorityColor(task.priority)}`}
+                className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${getPriorityColor(task.priority)}`}
               >
                 {task.priority}
               </span>
-              <select
-                value={task.status}
-                onChange={(e) =>
-                  onUpdate({
-                    ...task,
-                    status: e.target.value as Task["status"],
-                  })
-                }
-                className={`text-xs font-medium px-2 py-0.5 rounded-full border focus:outline-none appearance-none cursor-pointer ${getStatusColor(task.status)}`}
-              >
-                <option value="Não iniciado">Não iniciado</option>
-                <option value="Em andamento">Em andamento</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Concluído">Concluído</option>
-              </select>
-              {renderDueDateBadge(task.dueDate, task.status === "Concluído")}
+              <div className="relative inline-flex items-center">
+                <select
+                  value={task.status}
+                  onChange={(e) =>
+                    onUpdate({
+                      ...task,
+                      status: e.target.value as Task["status"],
+                    })
+                  }
+                  className={`text-[10px] uppercase font-bold tracking-wider pl-2 pr-5 py-0.5 rounded border focus:outline-none appearance-none cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(task.status)}`}
+                >
+                  <option value="Não iniciado">NÃO INICIADO</option>
+                  <option value="Em andamento">EM ANDAMENTO</option>
+                  <option value="Pendente">PENDENTE</option>
+                  <option value="Concluído">CONCLUÍDO</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center opacity-50">
+                  <ChevronDown size={12} />
+                </div>
+              </div>
+              <div className="flex items-center ml-auto sm:ml-2">
+                {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
+              </div>
             </div>
+            
             <h3
-              className={`text-lg font-semibold ${task.status === "Concluído" ? "text-gray-500 line-through" : "text-gray-900"}`}
+              className={`text-lg font-semibold mb-1 ${task.status === "Concluído" ? "text-gray-500 line-through" : "text-gray-900"}`}
             >
               {task.title}
             </h3>
@@ -152,7 +204,10 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
         {/* Finance Section */}
         <div className="mt-4 bg-gray-50 rounded-lg p-3 border border-gray-100">
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600 font-medium">Orçamento</span>
+            <span className="text-gray-600 font-medium flex items-center gap-1.5">
+              <Wallet size={14} className="text-gray-400" />
+              Orçamento
+            </span>
             <span className="font-semibold text-gray-900">
               {formatCurrency(task.savedAmount)} /{" "}
               <span className="text-gray-500 font-normal">
@@ -170,43 +225,43 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
 
         {/* Subtasks Toggle */}
         {task.subtasks.length > 0 && (
-          <div className="mt-4 border-t border-gray-100/50 pt-2">
+          <div className="mt-4 border-t border-gray-100/50 pt-3">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="w-full flex items-center justify-between text-sm text-gray-600 hover:text-gray-900 py-2 group"
+              className="w-full text-sm text-gray-600 hover:text-gray-900 flex flex-col gap-2 group"
             >
-              <div className="flex items-center gap-2">
-                <ListTodo
-                  size={16}
-                  className={`${completedSubtasks === task.subtasks.length ? "text-green-500" : "text-blue-500"}`}
-                />
-                <span className="font-medium">Subtarefas</span>
-              </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
-                  <div className="w-16 sm:w-20 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className={`h-1.5 rounded-full transition-all duration-300 ${completedSubtasks === task.subtasks.length ? "bg-green-500" : "bg-blue-400"}`}
-                      style={{
-                        width: `${(completedSubtasks / task.subtasks.length) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
+                  <ListTodo
+                    size={16}
+                    className={`${completedSubtasks === task.subtasks.length ? "text-green-500" : "text-blue-500"}`}
+                  />
+                  <span className="font-medium">Subtarefas</span>
+                </div>
+                <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                     {completedSubtasks}/{task.subtasks.length}
                   </span>
+                  {isExpanded ? (
+                    <ChevronUp
+                      size={16}
+                      className="text-gray-400 group-hover:text-gray-600"
+                    />
+                  ) : (
+                    <ChevronDown
+                      size={16}
+                      className="text-gray-400 group-hover:text-gray-600"
+                    />
+                  )}
                 </div>
-                {isExpanded ? (
-                  <ChevronUp
-                    size={16}
-                    className="text-gray-400 group-hover:text-gray-600"
-                  />
-                ) : (
-                  <ChevronDown
-                    size={16}
-                    className="text-gray-400 group-hover:text-gray-600"
-                  />
-                )}
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                <div
+                  className={`h-1.5 rounded-full transition-all duration-300 ${completedSubtasks === task.subtasks.length ? "bg-green-500" : "bg-blue-400"}`}
+                  style={{
+                    width: `${(completedSubtasks / task.subtasks.length) * 100}%`,
+                  }}
+                ></div>
               </div>
             </button>
           </div>
@@ -244,7 +299,7 @@ export function TaskCard({ task, onUpdate, onEditClick }: TaskCardProps) {
                     >
                       {subtask.title}
                     </span>
-                    {renderDueDateBadge(subtask.dueDate, subtask.completed)}
+                    {renderSubtaskDueDate(subtask.dueDate, subtask.completed)}
                   </div>
                 </button>
               ))}
