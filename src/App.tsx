@@ -23,6 +23,21 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Auth } from "./components/Auth";
 import { supabase } from "./supabase";
 import { Session } from "@supabase/supabase-js";
@@ -509,6 +524,49 @@ export default function App() {
     }
   };
 
+  const taskSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleTaskDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const currentList = filteredTasks.map((t) => t.id);
+    const oldIndex = currentList.indexOf(active.id.toString());
+    const newIndex = currentList.indexOf(over.id.toString());
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Build complete current list of tasks to reorder
+    let newTaskOrder = [...taskOrder];
+    
+    // Fill taskOrder with present tasks
+    tasks.forEach((t) => {
+      if (!newTaskOrder.includes(t.id)) {
+        newTaskOrder.push(t.id);
+      }
+    });
+
+    const globalOldIndex = newTaskOrder.indexOf(active.id.toString());
+    const globalNewIndex = newTaskOrder.indexOf(over.id.toString());
+
+    if (globalOldIndex !== -1 && globalNewIndex !== -1) {
+      const reorderedOrder = arrayMove(newTaskOrder, globalOldIndex, globalNewIndex);
+      setTaskOrder(reorderedOrder);
+      localStorage.setItem("user_tasks_order", JSON.stringify(reorderedOrder));
+      if (session) {
+        supabase.auth.updateUser({ data: { user_tasks_order: reorderedOrder } });
+      }
+    }
+  };
+
   if (isInitializing) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -670,19 +728,28 @@ export default function App() {
                         </button>
                       </motion.div>
                     ) : (
-                      filteredTasks.map((task, idx) => (
-                        <TaskCard
-                          key={task.id}
-                          task={task}
-                          index={idx + 1}
-                          totalTasks={filteredTasks.length}
-                          onUpdate={handleUpdateTask}
-                          onEditClick={setEditingTask}
-                          onDetailClick={setViewingTask}
-                          onMoveUp={() => moveTask(task.id, "up")}
-                          onMoveDown={() => moveTask(task.id, "down")}
-                        />
-                      ))
+                      <DndContext
+                        sensors={taskSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleTaskDragEnd}
+                      >
+                        <SortableContext
+                          items={filteredTasks.map((t) => t.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {filteredTasks.map((task, idx) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              index={idx + 1}
+                              totalTasks={filteredTasks.length}
+                              onUpdate={handleUpdateTask}
+                              onEditClick={setEditingTask}
+                              onDetailClick={setViewingTask}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
                     )}
                   </AnimatePresence>
                 </div>

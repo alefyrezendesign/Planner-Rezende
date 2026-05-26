@@ -112,6 +112,20 @@ interface TaskCardProps {
 export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDetailClick, onMoveUp, onMoveDown }: TaskCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -264,11 +278,19 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
 
   return (
     <motion.div
+      ref={setNodeRef}
+      style={style}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => onDetailClick(task)}
-      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-shadow hover:shadow-md cursor-pointer ${task.status === "Concluído" ? "border-green-200 bg-green-50/30" : "border-gray-200"}`}
+      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-all cursor-pointer ${
+        isDragging
+          ? "opacity-60 ring-2 ring-blue-500 scale-[1.01] shadow-lg border-blue-400 z-50 relative pointer-events-none"
+          : task.status === "Concluído"
+          ? "border-green-200 bg-green-50/30"
+          : "border-gray-200 hover:shadow-md"
+      }`}
     >
       {/* Optional Card Cover Image */}
       {task.imageUrl && (
@@ -286,27 +308,9 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5">
-              {index !== undefined && totalTasks !== undefined && (
-                <div className="flex items-center bg-white border border-gray-200 rounded h-[22px] shadow-sm" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
-                    disabled={index === 1}
-                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-r border-gray-200 ${index === 1 ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
-                    title="Mover para cima"
-                  >
-                    <ChevronUp size={12} strokeWidth={3} />
-                  </button>
-                  <div className="h-full px-1.5 sm:px-2 flex items-center justify-center text-[10px] font-bold text-gray-700 bg-gray-50/50 min-w-[20px] sm:min-w-[26px] select-none">
-                    {index}º
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
-                    disabled={index === totalTasks}
-                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-l border-gray-200 ${index === totalTasks ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
-                    title="Mover para baixo"
-                  >
-                    <ChevronDown size={12} strokeWidth={3} />
-                  </button>
+              {index !== undefined && (
+                <div className="flex items-center justify-center h-[22px] px-2 text-[10px] font-bold text-gray-400 bg-gray-100/50 border border-gray-200/60 rounded select-none">
+                  #{index}
                 </div>
               )}
               <div
@@ -364,13 +368,24 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
               {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
             </div>
           </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onEditClick(task); }}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0"
-            title="Editar valores e detalhes"
-          >
-            <Edit2 size={18} />
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={(e) => { e.stopPropagation(); onEditClick(task); }}
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+              title="Editar valores e detalhes"
+            >
+              <Edit2 size={18} />
+            </button>
+            <div
+              {...attributes}
+              {...listeners}
+              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors cursor-grab active:cursor-grabbing"
+              style={{ touchAction: "none" }}
+              title="Arrastar cartão para reordenar"
+            >
+              <GripVertical size={18} />
+            </div>
+          </div>
         </div>
 
         {/* Finance Section */}
