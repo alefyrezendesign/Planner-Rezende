@@ -22,6 +22,24 @@ export async function fetchTasks(userId: string) {
 }
 
 export async function saveTask(userId: string, task: Task) {
+  const dbSubtasks = [...task.subtasks];
+  
+  // Clean up any old meta item if it somehow existed in task.subtasks
+  const filteredSubtasks = dbSubtasks.filter(st => st.id !== "task-meta-info");
+  
+  // If there's metadata, add it as a special meta-info subtask record in the array
+  if (task.description || task.imageUrl || (task.links && task.links.length > 0)) {
+    filteredSubtasks.push({
+      id: "task-meta-info",
+      title: JSON.stringify({
+        description: task.description,
+        imageUrl: task.imageUrl,
+        links: task.links
+      }),
+      completed: false
+    });
+  }
+
   const record = {
     id: task.id,
     user_id: userId,
@@ -31,7 +49,7 @@ export async function saveTask(userId: string, task: Task) {
     status: task.status,
     estimated_cost: task.estimatedCost,
     saved_amount: task.savedAmount,
-    subtasks: task.subtasks,
+    subtasks: filteredSubtasks,
     due_date: task.dueDate
   };
   const { data, error } = await supabase.from('tasks').upsert(record).select();
@@ -112,6 +130,25 @@ export async function deleteHouse(userId: string, houseId: string) {
 
 // Helpers
 function parseTaskRecord(record: any): Task {
+  const allSubtasks = record.subtasks || [];
+  const metaItem = allSubtasks.find((st: any) => st.id === "task-meta-info");
+  let description = undefined;
+  let imageUrl = undefined;
+  let links = undefined;
+  
+  if (metaItem) {
+    try {
+      const meta = JSON.parse(metaItem.title);
+      description = meta.description;
+      imageUrl = meta.imageUrl;
+      links = meta.links;
+    } catch (e) {
+      console.error("Failed to parse task-meta-info item:", e);
+    }
+  }
+  
+  const actualSubtasks = allSubtasks.filter((st: any) => st.id !== "task-meta-info");
+
   return {
     id: record.id,
     title: record.title,
@@ -120,8 +157,11 @@ function parseTaskRecord(record: any): Task {
     status: record.status,
     estimatedCost: record.estimated_cost,
     savedAmount: record.saved_amount,
-    subtasks: record.subtasks || [],
-    dueDate: record.due_date
+    subtasks: actualSubtasks,
+    dueDate: record.due_date,
+    description,
+    imageUrl,
+    links
   };
 }
 

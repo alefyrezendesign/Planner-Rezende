@@ -10,9 +10,93 @@ import {
   CalendarClock,
   Wallet,
   GripVertical,
+  Link
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Task, Subtask } from "../types";
 import { formatCurrency, calculateProgress } from "../utils";
+
+interface SortableSubtaskItemProps {
+  subtask: Subtask;
+  onToggle: (id: string) => void;
+  renderSubtaskDueDate: (dueDate?: string, completed?: boolean) => React.ReactNode;
+}
+
+function SortableSubtaskItem({ subtask, onToggle, renderSubtaskDueDate }: SortableSubtaskItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: subtask.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start gap-2 w-full text-left p-2 transition-colors rounded-lg group ${
+        isDragging
+          ? "opacity-50 ring-2 ring-blue-500 scale-[1.02] shadow-md bg-white border border-blue-400 z-10 relative"
+          : "hover:bg-gray-100 bg-transparent"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(subtask.id)}
+        className="flex items-start gap-2 flex-1 text-left"
+      >
+        <div
+          className={`mt-0.5 flex-shrink-0 ${subtask.completed ? "text-green-500" : "text-gray-300 group-hover:text-gray-400"}`}
+        >
+          {subtask.completed ? (
+            <CheckCircle2 size={20} />
+          ) : (
+            <Circle size={20} />
+          )}
+        </div>
+        <div className="flex-1 flex flex-col gap-1 items-start">
+          <span
+            className={`text-sm md:text-base ${subtask.completed ? "text-gray-400 line-through" : "text-gray-700"}`}
+          >
+            {subtask.title}
+          </span>
+          {renderSubtaskDueDate(subtask.dueDate, subtask.completed)}
+        </div>
+      </button>
+      <div
+        {...attributes}
+        {...listeners}
+        className="mt-0.5 flex-shrink-0 text-gray-400 hover:text-blue-600 cursor-grab active:cursor-grabbing p-0.5 rounded-md hover:bg-gray-200 transition-colors"
+        style={{ touchAction: "none" }}
+      >
+        <GripVertical size={16} />
+      </div>
+    </div>
+  );
+}
 
 interface TaskCardProps {
   task: Task;
@@ -20,36 +104,40 @@ interface TaskCardProps {
   totalTasks?: number;
   onUpdate: (task: Task) => void;
   onEditClick: (task: Task) => void;
+  onDetailClick: (task: Task) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
-  isDragging?: boolean;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragOver?: (e: React.DragEvent) => void;
-  onDragEnd?: () => void;
-  onDrop?: (e: React.DragEvent) => void;
-  onTouchStart?: (e: React.TouchEvent) => void;
-  onTouchMove?: (e: React.TouchEvent) => void;
-  onTouchEnd?: (e: React.TouchEvent) => void;
 }
 
-export function TaskCard({
-  task,
-  index,
-  totalTasks,
-  onUpdate,
-  onEditClick,
-  onMoveUp,
-  onMoveDown,
-  isDragging,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onDrop,
-  onTouchStart,
-  onTouchMove,
-  onTouchEnd,
-}: TaskCardProps) {
+export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDetailClick, onMoveUp, onMoveDown }: TaskCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = task.subtasks.findIndex(
+        (st) => st.id === active.id
+      );
+      const newIndex = task.subtasks.findIndex(
+        (st) => st.id === over.id
+      );
+
+      const reorderedSubtasks = arrayMove(task.subtasks, oldIndex, newIndex);
+      onUpdate({ ...task, subtasks: reorderedSubtasks });
+    }
+  };
 
   const toggleSubtask = (subtaskId: string) => {
     const updatedSubtasks = task.subtasks.map((st) =>
@@ -175,44 +263,50 @@ export function TaskCard({
   const completedSubtasks = task.subtasks.filter((st) => st.completed).length;
 
   return (
-    <div
-      draggable={true}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragEnd={onDragEnd}
-      onDrop={onDrop}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      className="outline-none"
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={() => onDetailClick(task)}
+      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-shadow hover:shadow-md cursor-pointer ${task.status === "Concluído" ? "border-green-200 bg-green-50/30" : "border-gray-200"}`}
     >
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        data-task-index={index !== undefined ? index - 1 : undefined}
-        className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-all duration-200 ${
-          isDragging 
-            ? "border-blue-400 bg-blue-50/20 shadow-md ring-2 ring-blue-500/10 scale-[1.01] opacity-60" 
-            : task.status === "Concluído" 
-              ? "border-green-200 bg-green-50/30 hover:shadow-md" 
-              : "border-gray-200 hover:shadow-md"
-        }`}
-      >
+      {/* Optional Card Cover Image */}
+      {task.imageUrl && (
+        <div className="w-full h-28 sm:h-36 overflow-hidden border-b border-gray-100">
+          <img
+            src={task.imageUrl}
+            alt={task.title}
+            className="w-full h-full object-cover select-none"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      )}
+
       <div className="p-4 sm:p-5">
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5">
-              {index !== undefined && (
-                <div 
-                  className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 border border-gray-200 rounded-md h-[22px] px-1.5 shadow-sm select-none cursor-grab active:cursor-grabbing text-gray-500 transition-colors shrink-0 touch-none"
-                  title="Arraste para reordenar"
-                >
-                  <GripVertical size={11} strokeWidth={2.5} className="text-gray-400" />
-                  <span className="text-[10px] font-bold text-gray-700">
+              {index !== undefined && totalTasks !== undefined && (
+                <div className="flex items-center bg-white border border-gray-200 rounded h-[22px] shadow-sm" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+                    disabled={index === 1}
+                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-r border-gray-200 ${index === 1 ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
+                    title="Mover para cima"
+                  >
+                    <ChevronUp size={12} strokeWidth={3} />
+                  </button>
+                  <div className="h-full px-1.5 sm:px-2 flex items-center justify-center text-[10px] font-bold text-gray-700 bg-gray-50/50 min-w-[20px] sm:min-w-[26px] select-none">
                     {index}º
-                  </span>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+                    disabled={index === totalTasks}
+                    className={`h-full px-1 sm:px-1.5 flex items-center justify-center transition-colors border-l border-gray-200 ${index === totalTasks ? "text-gray-300 bg-gray-50 cursor-default" : "text-gray-500 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"}`}
+                    title="Mover para baixo"
+                  >
+                    <ChevronDown size={12} strokeWidth={3} />
+                  </button>
                 </div>
               )}
               <div
@@ -220,7 +314,7 @@ export function TaskCard({
               >
                 {task.priority}
               </div>
-              <div className="relative inline-flex items-center h-[22px]">
+              <div className="relative inline-flex items-center h-[22px]" onClick={(e) => e.stopPropagation()}>
                 <select
                   value={task.status}
                   onChange={(e) =>
@@ -250,13 +344,28 @@ export function TaskCard({
             >
               {task.title}
             </h3>
+
+            {/* Compact Description summary */}
+            {task.description && (
+              <p className="text-xs text-gray-500 font-medium mt-1 line-clamp-1 max-w-full leading-relaxed">
+                {task.description}
+              </p>
+            )}
+
+            {/* Compact Links count badge */}
+            {task.links && task.links.length > 0 && (
+              <div className="flex items-center gap-1 mt-1.5 text-xs text-blue-600 font-medium bg-blue-50/50 border border-blue-100/50 px-2 py-0.5 rounded-full w-fit">
+                <Link size={11} className="shrink-0 text-blue-400" />
+                <span>{task.links.length} {task.links.length === 1 ? "link" : "links"}</span>
+              </div>
+            )}
             
-            <div className="sm:hidden mt-2 mb-2">
+            <div className="sm:hidden mt-2.5 mb-2">
               {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
             </div>
           </div>
           <button
-            onClick={() => onEditClick(task)}
+            onClick={(e) => { e.stopPropagation(); onEditClick(task); }}
             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors flex-shrink-0"
             title="Editar valores e detalhes"
           >
@@ -290,7 +399,7 @@ export function TaskCard({
         {task.subtasks.length > 0 && (
           <div className="mt-4 border-t border-gray-100/50 pt-3">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
               className="w-full text-sm text-gray-600 hover:text-gray-900 flex flex-col gap-2 group"
             >
               <div className="flex items-center justify-between w-full">
@@ -338,39 +447,33 @@ export function TaskCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-gray-100 bg-gray-50/50 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+            className="border-t border-gray-100 bg-gray-50/50 overflow-hidden relative z-10"
           >
             <div className="p-4 space-y-2">
-              {task.subtasks.map((subtask) => (
-                <button
-                  key={subtask.id}
-                  onClick={() => toggleSubtask(subtask.id)}
-                  className="flex items-start gap-3 w-full text-left p-2 hover:bg-gray-100 transition-colors rounded-lg group"
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={task.subtasks.map((st) => st.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <div
-                    className={`mt-0.5 flex-shrink-0 ${subtask.completed ? "text-green-500" : "text-gray-300 group-hover:text-gray-400"}`}
-                  >
-                    {subtask.completed ? (
-                      <CheckCircle2 size={20} />
-                    ) : (
-                      <Circle size={20} />
-                    )}
-                  </div>
-                  <div className="flex-1 flex flex-col gap-1 items-start">
-                    <span
-                      className={`text-sm md:text-base ${subtask.completed ? "text-gray-400 line-through" : "text-gray-700"}`}
-                    >
-                      {subtask.title}
-                    </span>
-                    {renderSubtaskDueDate(subtask.dueDate, subtask.completed)}
-                  </div>
-                </button>
-              ))}
+                  {task.subtasks.map((subtask) => (
+                    <SortableSubtaskItem
+                      key={subtask.id}
+                      subtask={subtask}
+                      onToggle={toggleSubtask}
+                      renderSubtaskDueDate={renderSubtaskDueDate}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
-  </div>
   );
 }

@@ -4,6 +4,7 @@ import { Task, CarScenario, RealEstateScenario } from "./types";
 import { TaskCard } from "./components/TaskCard";
 import { DashboardStats } from "./components/DashboardStats";
 import { EditTaskModal } from "./components/EditTaskModal";
+import { TaskDetailModal } from "./components/TaskDetailModal";
 import { CarSimulator } from "./components/CarSimulator";
 import { HouseSimulator } from "./components/HouseSimulator";
 import { RezendeLogo } from "./components/RezendeLogo";
@@ -29,7 +30,6 @@ import * as api from "./api";
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [taskOrder, setTaskOrder] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem("user_tasks_order");
@@ -77,6 +77,7 @@ export default function App() {
     }
   };
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
     "Todas",
   );
@@ -420,76 +421,6 @@ export default function App() {
     });
   }, [tasks, selectedCategory, taskOrder]);
 
-  const handleReorderTasks = (dragIndex: number, hoverIndex: number) => {
-    if (dragIndex === hoverIndex) return;
-    
-    const filteredIds = filteredTasks.map(t => t.id);
-    const newFilteredIds = [...filteredIds];
-    const [draggedId] = newFilteredIds.splice(dragIndex, 1);
-    newFilteredIds.splice(hoverIndex, 0, draggedId);
-    
-    const nonFilteredIds = taskOrder.filter(id => !filteredIds.includes(id));
-    const finalOrder = [...newFilteredIds, ...nonFilteredIds];
-    
-    setTaskOrder(finalOrder);
-    localStorage.setItem("user_tasks_order", JSON.stringify(finalOrder));
-  };
-
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    if (e.dataTransfer) {
-      e.dataTransfer.setData("text/plain", index.toString());
-      e.dataTransfer.effectAllowed = "move";
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    if (draggedIndex !== index) {
-      handleReorderTasks(draggedIndex, index);
-      setDraggedIndex(index);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDraggedIndex(null);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (draggedIndex === null) return;
-    const touch = e.touches[0];
-    const clientY = touch.clientY;
-    
-    const elements = document.querySelectorAll("[data-task-index]");
-    for (let i = 0; i < elements.length; i++) {
-      const el = elements[i];
-      const rect = el.getBoundingClientRect();
-      
-      if (clientY >= rect.top && clientY <= rect.bottom) {
-        const hoverIndex = parseInt(el.getAttribute("data-task-index") || "", 10);
-        if (!isNaN(hoverIndex) && hoverIndex !== draggedIndex) {
-          handleReorderTasks(draggedIndex, hoverIndex);
-          setDraggedIndex(hoverIndex);
-          break;
-        }
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setDraggedIndex(null);
-  };
-
   const moveTask = (taskId: string, direction: "up" | "down") => {
     const currentList = filteredTasks.map(t => t.id);
     const index = currentList.indexOf(taskId);
@@ -690,14 +621,9 @@ export default function App() {
                           totalTasks={filteredTasks.length}
                           onUpdate={handleUpdateTask}
                           onEditClick={setEditingTask}
-                          isDragging={draggedIndex === idx}
-                          onDragStart={(e) => handleDragStart(e, idx)}
-                          onDragOver={(e) => handleDragOver(e, idx)}
-                          onDragEnd={handleDragEnd}
-                          onDrop={(e) => handleDrop(e, idx)}
-                          onTouchStart={(e) => handleTouchStart(e, idx)}
-                          onTouchMove={handleTouchMove}
-                          onTouchEnd={handleTouchEnd}
+                          onDetailClick={setViewingTask}
+                          onMoveUp={() => moveTask(task.id, "up")}
+                          onMoveDown={() => moveTask(task.id, "down")}
                         />
                       ))
                     )}
@@ -717,6 +643,16 @@ export default function App() {
           onClose={() => setEditingTask(null)}
           onSave={handleUpdateTask}
           onDelete={handleDeleteTask}
+        />
+      )}
+
+      {/* Detail Modal */}
+      {viewingTask && (
+        <TaskDetailModal
+          task={viewingTask}
+          isOpen={true}
+          onClose={() => setViewingTask(null)}
+          onEditClick={setEditingTask}
         />
       )}
 

@@ -18,6 +18,9 @@ export interface Task {
   savedAmount: number;
   subtasks: Subtask[];
   dueDate?: string;
+  description?: string;
+  imageUrl?: string;
+  links?: { id: string; url: string; title?: string }[];
 }
 
 export interface CarScenario {
