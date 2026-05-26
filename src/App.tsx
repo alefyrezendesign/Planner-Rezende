@@ -95,6 +95,7 @@ export default function App() {
     const meta = currentSession.user?.user_metadata || {};
     const carsLocally = localStorage.getItem("global_cars_saved");
     const housesLocally = localStorage.getItem("global_houses_saved");
+    const taskOrderLocally = localStorage.getItem("user_tasks_order");
 
     if (meta.global_cars_saved !== undefined) {
       const val = Number(meta.global_cars_saved);
@@ -111,6 +112,23 @@ export default function App() {
     } else if (housesLocally) {
       supabase.auth.updateUser({ data: { global_houses_saved: Number(housesLocally) } });
     }
+
+    if (meta.user_tasks_order !== undefined) {
+      const val = meta.user_tasks_order;
+      if (Array.isArray(val)) {
+        setTaskOrder(val);
+        localStorage.setItem("user_tasks_order", JSON.stringify(val));
+      }
+    } else if (taskOrderLocally) {
+      try {
+        const val = JSON.parse(taskOrderLocally);
+        if (Array.isArray(val)) {
+          supabase.auth.updateUser({ data: { user_tasks_order: val } });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
   };
 
   // Load all cloud data
@@ -125,6 +143,32 @@ export default function App() {
       setTasks(fetchedTasks);
       setCars(fetchedCars);
       setHouses(fetchedHouses);
+
+      // Consolidate current task order and sync missing task IDs
+      let currentOrder: string[] = [];
+      try {
+        const saved = localStorage.getItem("user_tasks_order");
+        currentOrder = saved ? JSON.parse(saved) : [];
+      } catch {
+        currentOrder = [];
+      }
+
+      let updatedOrder = [...currentOrder];
+      let orderChanged = false;
+      fetchedTasks.forEach(t => {
+        if (!updatedOrder.includes(t.id)) {
+          updatedOrder.push(t.id);
+          orderChanged = true;
+        }
+      });
+
+      if (orderChanged) {
+        setTaskOrder(updatedOrder);
+        localStorage.setItem("user_tasks_order", JSON.stringify(updatedOrder));
+        await supabase.auth.updateUser({ data: { user_tasks_order: updatedOrder } });
+      } else {
+        setTaskOrder(currentOrder);
+      }
 
       // Migrate legacy database values to global amount if not already set globally
       const meta = currentSession?.user?.user_metadata || session?.user?.user_metadata || {};
@@ -209,6 +253,12 @@ export default function App() {
     if (!session?.user?.id) return;
     const previousTasks = [...tasks];
     setTasks(tasks.filter((t) => t.id !== taskId));
+
+    const newTaskOrder = taskOrder.filter((id) => id !== taskId);
+    setTaskOrder(newTaskOrder);
+    localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
+    supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
+
     setSyncing(true);
     try {
       await api.deleteTask(session.user.id, taskId);
@@ -227,6 +277,10 @@ export default function App() {
 
     if (isNew) {
       setTasks([updatedTask, ...tasks]);
+      const newTaskOrder = [updatedTask.id, ...taskOrder];
+      setTaskOrder(newTaskOrder);
+      localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
+      supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
     } else {
       setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
     }
@@ -450,6 +504,9 @@ export default function App() {
     
     setTaskOrder(newTaskOrder);
     localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
+    if (session) {
+      supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
+    }
   };
 
   if (isInitializing) {
