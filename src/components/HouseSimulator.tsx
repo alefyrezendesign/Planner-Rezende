@@ -29,6 +29,7 @@ export function HouseSimulator({
   onDeleteHouse,
 }: HouseSimulatorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [localEditHouse, setLocalEditHouse] = useState<RealEstateScenario | null>(null);
   const [isEditingGlobalSaved, setIsEditingGlobalSaved] = useState(false);
   const [tempGlobalSaved, setTempGlobalSaved] = useState("");
 
@@ -72,11 +73,24 @@ export function HouseSimulator({
     }
   };
 
-  const handleChange = (
+  const handleEditClick = (house: RealEstateScenario) => {
+    setEditingId(house.id);
+    setLocalEditHouse({ ...house });
+  };
+
+  const handleSaveClick = (houseId: string) => {
+    if (localEditHouse) {
+      onUpdateHouse(localEditHouse);
+    }
+    setEditingId(null);
+    setLocalEditHouse(null);
+  };
+
+  const handleLocalChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    house: RealEstateScenario,
     field: keyof RealEstateScenario,
   ) => {
+    if (!localEditHouse) return;
     let val: any;
     if (
       field === "propertyName" ||
@@ -87,7 +101,7 @@ export function HouseSimulator({
     } else {
       val = Number(e.target.value) || 0;
     }
-    onUpdateHouse({ ...house, [field]: val });
+    setLocalEditHouse({ ...localEditHouse, [field]: val });
   };
 
   const handleSaveGlobalAmount = () => {
@@ -168,24 +182,25 @@ export function HouseSimulator({
       <div className="grid grid-cols-1 gap-6">
         <AnimatePresence>
           {houses.map((house) => {
+            const isEditing = editingId === house.id;
+            const activeHouse = isEditing && localEditHouse ? localEditHouse : house;
+
             const financedAmount = Math.max(
               0,
-              house.propertyValue - house.downPaymentTarget - house.subsidy,
+              activeHouse.propertyValue - activeHouse.downPaymentTarget - activeHouse.subsidy,
             );
             const { first, last, totalInterest } = calculateAmortization(
               financedAmount,
-              house.interestRateAnnual,
-              house.installments,
-              house.amortizationType,
+              activeHouse.interestRateAnnual,
+              activeHouse.installments,
+              activeHouse.amortizationType,
             );
             const totalCost =
-              house.downPaymentTarget + financedAmount + totalInterest;
+              activeHouse.downPaymentTarget + financedAmount + totalInterest;
             const downPaymentProgress =
-              house.downPaymentTarget > 0
-                ? (globalHousesSavedAmount / house.downPaymentTarget) * 100
+              activeHouse.downPaymentTarget > 0
+                ? (globalHousesSavedAmount / activeHouse.downPaymentTarget) * 100
                 : 0;
-
-            const isEditing = editingId === house.id;
 
             return (
               <motion.div
@@ -199,10 +214,10 @@ export function HouseSimulator({
                   {/* Image Section */}
                   <div className="w-full md:w-1/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50">
                     <div className="relative w-full min-h-[220px] flex-1 flex items-center justify-center overflow-hidden bg-gray-100">
-                      {house.imageUrl ? (
+                      {activeHouse.imageUrl ? (
                         <img
-                          src={house.imageUrl}
-                          alt={house.propertyName}
+                          src={activeHouse.imageUrl}
+                          alt={activeHouse.propertyName}
                           className="w-full h-full object-cover absolute inset-0"
                         />
                       ) : (
@@ -224,8 +239,8 @@ export function HouseSimulator({
                           />
                           <input
                             type="text"
-                            value={house.imageUrl || ""}
-                            onChange={(e) => handleChange(e, house, "imageUrl")}
+                            value={activeHouse.imageUrl || ""}
+                            onChange={(e) => handleLocalChange(e, "imageUrl")}
                             placeholder="URL da imagem"
                             className="bg-white border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                           />
@@ -236,11 +251,11 @@ export function HouseSimulator({
                             accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
-                              if (file) {
+                              if (file && localEditHouse) {
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
-                                  onUpdateHouse({
-                                    ...house,
+                                  setLocalEditHouse({
+                                    ...localEditHouse,
                                     imageUrl: reader.result as string,
                                   });
                                 };
@@ -262,24 +277,28 @@ export function HouseSimulator({
                           {isEditing ? (
                             <input
                               type="text"
-                              value={house.propertyName}
+                              value={activeHouse.propertyName}
                               onChange={(e) =>
-                                handleChange(e, house, "propertyName")
+                                handleLocalChange(e, "propertyName")
                               }
                               placeholder="Nome/Endereço do Imóvel"
                               className="text-2xl font-bold bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 w-full"
                             />
                           ) : (
                             <h3 className="text-2xl font-bold text-gray-900 tracking-tight leading-tight">
-                              {house.propertyName || "Novo Cenário"}
+                              {activeHouse.propertyName || "Novo Cenário"}
                             </h3>
                           )}
                         </div>
                         <div className="flex items-center gap-1 bg-gray-50 rounded-full p-1 border border-gray-100 shrink-0">
                           <button
-                            onClick={() =>
-                              setEditingId(isEditing ? null : house.id)
-                            }
+                            onClick={() => {
+                              if (isEditing) {
+                                handleSaveClick(house.id);
+                              } else {
+                                handleEditClick(house);
+                              }
+                            }}
                             className={`p-2 rounded-full transition-all ${isEditing ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-gray-500 hover:bg-blue-50 hover:text-blue-600"}`}
                             title={isEditing ? "Salvar" : "Editar"}
                           >
@@ -309,15 +328,15 @@ export function HouseSimulator({
                             {isEditing ? (
                               <input
                                 type="number"
-                                value={house.propertyValue || ""}
+                                value={activeHouse.propertyValue || ""}
                                 onChange={(e) =>
-                                  handleChange(e, house, "propertyValue")
+                                  handleLocalChange(e, "propertyValue")
                                 }
                                 className="w-full max-w-xs px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                               />
                             ) : (
                               <p className="text-2xl font-black text-gray-800 tracking-tight">
-                                {formatCurrency(house.propertyValue)}
+                                {formatCurrency(activeHouse.propertyValue)}
                               </p>
                             )}
                           </div>
@@ -328,18 +347,17 @@ export function HouseSimulator({
                               {isEditing ? (
                                 <input
                                   type="number"
-                                  value={house.downPaymentTarget || ""}
+                                  value={activeHouse.downPaymentTarget || ""}
                                   onChange={(e) =>
-                                    handleChange(
+                                    handleLocalChange(
                                       e,
-                                      house,
                                       "downPaymentTarget",
                                     )
                                   }
                                   className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
                                 />
                               ) : (
-                                <span className="font-bold text-gray-900">{formatCurrency(house.downPaymentTarget)}</span>
+                                <span className="font-bold text-gray-900">{formatCurrency(activeHouse.downPaymentTarget)}</span>
                               )}
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
@@ -347,14 +365,14 @@ export function HouseSimulator({
                               {isEditing ? (
                                 <input
                                   type="number"
-                                  value={house.subsidy || ""}
+                                  value={activeHouse.subsidy || ""}
                                   onChange={(e) =>
-                                    handleChange(e, house, "subsidy")
+                                    handleLocalChange(e, "subsidy")
                                   }
                                   className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
                                 />
                               ) : (
-                                <span className="font-bold text-gray-900">{formatCurrency(house.subsidy)}</span>
+                                <span className="font-bold text-gray-900">{formatCurrency(activeHouse.subsidy)}</span>
                               )}
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
@@ -364,12 +382,12 @@ export function HouseSimulator({
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
                               <span className="text-gray-500 font-medium">Falta</span>
                               <span className="font-bold text-orange-500">
-                                {formatCurrency(Math.max(0, house.downPaymentTarget - globalHousesSavedAmount))}
+                                {formatCurrency(Math.max(0, activeHouse.downPaymentTarget - globalHousesSavedAmount))}
                               </span>
                             </div>
                           </div>
 
-                          {!isEditing && house.downPaymentTarget > 0 && (
+                          {!isEditing && activeHouse.downPaymentTarget > 0 && (
                             <div className="mt-4 pt-1">
                               <div className="flex items-center justify-between mb-1.5">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -414,11 +432,10 @@ export function HouseSimulator({
                                 <input
                                   type="number"
                                   step="0.01"
-                                  value={house.interestRateAnnual || ""}
+                                  value={activeHouse.interestRateAnnual || ""}
                                   onChange={(e) =>
-                                    handleChange(
+                                    handleLocalChange(
                                       e,
-                                      house,
                                       "interestRateAnnual",
                                     )
                                   }
@@ -426,7 +443,7 @@ export function HouseSimulator({
                                 />
                               ) : (
                                 <span className="font-bold text-slate-900">
-                                  {house.interestRateAnnual}%
+                                  {activeHouse.interestRateAnnual}%
                                 </span>
                               )}
                             </div>
@@ -435,15 +452,15 @@ export function HouseSimulator({
                               {isEditing ? (
                                 <input
                                   type="number"
-                                  value={house.installments || ""}
+                                  value={activeHouse.installments || ""}
                                   onChange={(e) =>
-                                    handleChange(e, house, "installments")
+                                    handleLocalChange(e, "installments")
                                   }
                                   className="w-20 px-2 py-1 border border-slate-300 rounded text-right text-sm bg-white"
                                 />
                               ) : (
                                 <span className="font-bold text-slate-900">
-                                  {house.installments}x
+                                  {activeHouse.installments}x
                                 </span>
                               )}
                             </div>
@@ -451,9 +468,9 @@ export function HouseSimulator({
                               <span className="text-slate-500 font-medium">Amortização</span>
                               {isEditing ? (
                                 <select
-                                  value={house.amortizationType}
+                                  value={activeHouse.amortizationType}
                                   onChange={(e) =>
-                                    handleChange(e, house, "amortizationType")
+                                    handleLocalChange(e, "amortizationType")
                                   }
                                   className="w-24 px-2 py-1 border border-slate-300 rounded text-sm bg-white focus:outline-none"
                                 >
@@ -462,7 +479,7 @@ export function HouseSimulator({
                                 </select>
                               ) : (
                                 <span className="font-bold text-slate-900 uppercase">
-                                  {house.amortizationType}
+                                  {activeHouse.amortizationType}
                                 </span>
                               )}
                             </div>

@@ -27,10 +27,12 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -93,6 +95,7 @@ export default function App() {
   };
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
     "Todas",
   );
@@ -297,7 +300,23 @@ export default function App() {
       localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
       supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
     } else {
+      const oldTask = tasks.find((t) => t.id === updatedTask.id);
+      const wasCompleted = oldTask?.status === "Concluído";
+      const isCompleted = updatedTask.status === "Concluído";
+
       setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+
+      if (wasCompleted && !isCompleted) {
+        const newTaskOrder = [updatedTask.id, ...taskOrder.filter((id) => id !== updatedTask.id)];
+        setTaskOrder(newTaskOrder);
+        localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
+        supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
+      } else if (!wasCompleted && isCompleted) {
+        const newTaskOrder = [...taskOrder.filter((id) => id !== updatedTask.id), updatedTask.id];
+        setTaskOrder(newTaskOrder);
+        localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
+        supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
+      }
     }
 
     setSyncing(true);
@@ -477,6 +496,9 @@ export default function App() {
     const priorityWeight = { Alta: 3, Média: 2, Baixa: 1 };
 
     return [...result].sort((a, b) => {
+      if (a.status === "Concluído" && b.status !== "Concluído") return 1;
+      if (a.status !== "Concluído" && b.status === "Concluído") return -1;
+
       const indexA = taskOrder.indexOf(a.id);
       const indexB = taskOrder.indexOf(b.id);
       
@@ -484,11 +506,17 @@ export default function App() {
       if (indexA !== -1) return -1;
       if (indexB !== -1) return 1;
 
-      if (a.status === "Concluído" && b.status !== "Concluído") return 1;
-      if (a.status !== "Concluído" && b.status === "Concluído") return -1;
       return priorityWeight[b.priority] - priorityWeight[a.priority];
     });
   }, [tasks, selectedCategory, taskOrder]);
+
+  const activeFilteredTasks = useMemo(() => {
+    return filteredTasks.filter((t) => t.status !== "Concluído");
+  }, [filteredTasks]);
+
+  const completedFilteredTasks = useMemo(() => {
+    return filteredTasks.filter((t) => t.status === "Concluído");
+  }, [filteredTasks]);
 
   const moveTask = (taskId: string, direction: "up" | "down") => {
     const currentList = filteredTasks.map(t => t.id);
@@ -525,9 +553,15 @@ export default function App() {
   };
 
   const taskSensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 50,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -539,7 +573,7 @@ export default function App() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const currentList = filteredTasks.map((t) => t.id);
+    const currentList = activeFilteredTasks.map((t) => t.id);
     const oldIndex = currentList.indexOf(active.id.toString());
     const newIndex = currentList.indexOf(over.id.toString());
     if (oldIndex === -1 || newIndex === -1) return;
@@ -728,28 +762,82 @@ export default function App() {
                         </button>
                       </motion.div>
                     ) : (
-                      <DndContext
-                        sensors={taskSensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleTaskDragEnd}
-                      >
-                        <SortableContext
-                          items={filteredTasks.map((t) => t.id)}
-                          strategy={verticalListSortingStrategy}
-                        >
-                          {filteredTasks.map((task, idx) => (
-                            <TaskCard
-                              key={task.id}
-                              task={task}
-                              index={idx + 1}
-                              totalTasks={filteredTasks.length}
-                              onUpdate={handleUpdateTask}
-                              onEditClick={setEditingTask}
-                              onDetailClick={setViewingTask}
-                            />
-                          ))}
-                        </SortableContext>
-                      </DndContext>
+                      <div className="space-y-6">
+                        {/* Seção de Tarefas Ativas / Pendentes */}
+                        {activeFilteredTasks.length > 0 ? (
+                          <DndContext
+                            sensors={taskSensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={(event) => setActiveTaskId(event.active.id.toString())}
+                            onDragEnd={(event) => {
+                              handleTaskDragEnd(event);
+                              setActiveTaskId(null);
+                            }}
+                            onDragCancel={() => setActiveTaskId(null)}
+                          >
+                            <SortableContext
+                              items={activeFilteredTasks.map((t) => t.id)}
+                              strategy={verticalListSortingStrategy}
+                            >
+                              <div className="space-y-4">
+                                {activeFilteredTasks.map((task, idx) => (
+                                  <TaskCard
+                                    key={task.id}
+                                    task={task}
+                                    index={idx + 1}
+                                    totalTasks={activeFilteredTasks.length}
+                                    onUpdate={handleUpdateTask}
+                                    onEditClick={setEditingTask}
+                                    onDetailClick={setViewingTask}
+                                  />
+                                ))}
+                              </div>
+                            </SortableContext>
+                            <DragOverlay adjustScale={false} dropAnimation={{ duration: 150 }}>
+                              {activeTaskId ? (
+                                <TaskCard
+                                  task={tasks.find((t) => t.id === activeTaskId)!}
+                                  isOverlay={true}
+                                  onUpdate={() => {}}
+                                  onEditClick={() => {}}
+                                  onDetailClick={() => {}}
+                                />
+                              ) : null}
+                            </DragOverlay>
+                          </DndContext>
+                        ) : (
+                          <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                            <span className="text-sm font-semibold text-gray-500">
+                              Todas as tarefas desta categoria estão concluídas! 🎉
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Seção de Tarefas Concluídas */}
+                        {completedFilteredTasks.length > 0 && (
+                          <div className="mt-8 border-t border-gray-200 pt-6">
+                            <div className="flex items-center gap-2 mb-4 px-1">
+                              <span className="flex h-2.5 w-2.5 rounded-full bg-green-500" />
+                              <h3 className="text-xs font-black text-gray-500 tracking-wider uppercase">
+                                Concluídas ({completedFilteredTasks.length})
+                              </h3>
+                            </div>
+                            <div className="space-y-4 opacity-75 hover:opacity-100 transition-opacity duration-300">
+                              {completedFilteredTasks.map((task, idx) => (
+                                <TaskCard
+                                  key={task.id}
+                                  task={task}
+                                  index={activeFilteredTasks.length + idx + 1}
+                                  totalTasks={filteredTasks.length}
+                                  onUpdate={handleUpdateTask}
+                                  onEditClick={setEditingTask}
+                                  onDetailClick={setViewingTask}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </AnimatePresence>
                 </div>

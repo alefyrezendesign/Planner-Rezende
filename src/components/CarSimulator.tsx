@@ -29,6 +29,7 @@ export function CarSimulator({
   onDeleteCar,
 }: CarSimulatorProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [localEditCar, setLocalEditCar] = useState<CarScenario | null>(null);
   const [isEditingGlobalSaved, setIsEditingGlobalSaved] = useState(false);
   const [tempGlobalSaved, setTempGlobalSaved] = useState("");
 
@@ -37,16 +38,29 @@ export function CarSimulator({
     return (pv * i) / (1 - Math.pow(1 + i, -n));
   };
 
-  const handleChange = (
+  const handleEditClick = (car: CarScenario) => {
+    setEditingId(car.id);
+    setLocalEditCar({ ...car });
+  };
+
+  const handleSaveClick = (carId: string) => {
+    if (localEditCar) {
+      onUpdateCar(localEditCar);
+    }
+    setEditingId(null);
+    setLocalEditCar(null);
+  };
+
+  const handleLocalChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    car: CarScenario,
     field: keyof CarScenario,
   ) => {
+    if (!localEditCar) return;
     const val =
       field === "modelName" || field === "imageUrl"
         ? e.target.value
         : Number(e.target.value) || 0;
-    onUpdateCar({ ...car, [field]: val });
+    setLocalEditCar({ ...localEditCar, [field]: val });
   };
 
   const handleSaveGlobalAmount = () => {
@@ -127,24 +141,25 @@ export function CarSimulator({
       <div className="grid grid-cols-1 gap-6">
         <AnimatePresence>
           {cars.map((car) => {
+            const isEditing = editingId === car.id;
+            const activeCar = isEditing && localEditCar ? localEditCar : car;
+
             const financedAmount = Math.max(
               0,
-              car.carValue - car.downPaymentTarget,
+              activeCar.carValue - activeCar.downPaymentTarget,
             );
-            const monthlyRate = car.interestRateMonthly / 100;
+            const monthlyRate = activeCar.interestRateMonthly / 100;
             const pmt = calculatePMT(
               financedAmount,
               monthlyRate,
-              car.installments || 1,
+              activeCar.installments || 1,
             );
-            const totalFinancedCost = pmt * (car.installments || 1);
-            const totalCarCost = car.downPaymentTarget + totalFinancedCost;
-            const missingAmount = Math.max(0, car.downPaymentTarget - globalCarsSavedAmount);
-            const downPaymentProgress = car.downPaymentTarget > 0
-              ? (globalCarsSavedAmount / car.downPaymentTarget) * 100
+            const totalFinancedCost = pmt * (activeCar.installments || 1);
+            const totalCarCost = activeCar.downPaymentTarget + totalFinancedCost;
+            const missingAmount = Math.max(0, activeCar.downPaymentTarget - globalCarsSavedAmount);
+            const downPaymentProgress = activeCar.downPaymentTarget > 0
+              ? (globalCarsSavedAmount / activeCar.downPaymentTarget) * 100
               : 0;
-
-            const isEditing = editingId === car.id;
 
             return (
               <motion.div
@@ -157,11 +172,11 @@ export function CarSimulator({
                 <div className="flex flex-col md:flex-row">
                   {/* Image Section */}
                   <div className="w-full md:w-1/3 flex flex-col border-b md:border-b-0 md:border-r border-gray-100 bg-gray-50">
-                    <div className="relative w-full min-h-[200px] flex-1 flex items-center justify-center overflow-hidden bg-gray-100">
-                      {car.imageUrl ? (
+                   <div className="relative w-full min-h-[200px] flex-1 flex items-center justify-center overflow-hidden bg-gray-100">
+                      {activeCar.imageUrl ? (
                         <img
-                          src={car.imageUrl}
-                          alt={car.modelName}
+                          src={activeCar.imageUrl}
+                          alt={activeCar.modelName}
                           className="w-full h-full object-cover absolute inset-0"
                         />
                       ) : (
@@ -183,8 +198,8 @@ export function CarSimulator({
                           />
                           <input
                             type="text"
-                            value={car.imageUrl || ""}
-                            onChange={(e) => handleChange(e, car, "imageUrl")}
+                            value={activeCar.imageUrl || ""}
+                            onChange={(e) => handleLocalChange(e, "imageUrl")}
                             placeholder="URL da imagem"
                             className="bg-white border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-xs w-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
                           />
@@ -195,11 +210,11 @@ export function CarSimulator({
                             accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
-                              if (file) {
+                              if (file && localEditCar) {
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
-                                  onUpdateCar({
-                                    ...car,
+                                  setLocalEditCar({
+                                    ...localEditCar,
                                     imageUrl: reader.result as string,
                                   });
                                 };
@@ -221,24 +236,28 @@ export function CarSimulator({
                           {isEditing ? (
                             <input
                               type="text"
-                              value={car.modelName}
+                              value={activeCar.modelName}
                               onChange={(e) =>
-                                handleChange(e, car, "modelName")
+                                handleLocalChange(e, "modelName")
                               }
                               placeholder="Modelo do carro"
                               className="text-2xl font-bold bg-white border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 w-full"
                             />
                           ) : (
                             <h3 className="text-2xl font-bold text-gray-900 tracking-tight leading-tight">
-                              {car.modelName || "Novo Cenário"}
+                              {activeCar.modelName || "Novo Cenário"}
                             </h3>
                           )}
                         </div>
                         <div className="flex items-center gap-1 bg-gray-50 rounded-full p-1 border border-gray-100 shrink-0">
                           <button
-                            onClick={() =>
-                              setEditingId(isEditing ? null : car.id)
-                            }
+                            onClick={() => {
+                              if (isEditing) {
+                                handleSaveClick(car.id);
+                              } else {
+                                handleEditClick(car);
+                              }
+                            }}
                             className={`p-2 rounded-full transition-all ${isEditing ? "bg-emerald-500 text-white shadow-sm hover:bg-emerald-600" : "text-gray-500 hover:bg-blue-50 hover:text-blue-600"}`}
                             title={isEditing ? "Salvar" : "Editar"}
                           >
@@ -268,15 +287,15 @@ export function CarSimulator({
                             {isEditing ? (
                               <input
                                 type="number"
-                                value={car.carValue || ""}
+                                value={activeCar.carValue || ""}
                                 onChange={(e) =>
-                                  handleChange(e, car, "carValue")
+                                  handleLocalChange(e, "carValue")
                                 }
                                 className="w-full max-w-xs px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                               />
                             ) : (
                               <p className="text-2xl font-black text-gray-800 tracking-tight">
-                                {formatCurrency(car.carValue)}
+                                {formatCurrency(activeCar.carValue)}
                               </p>
                             )}
                           </div>
@@ -287,14 +306,14 @@ export function CarSimulator({
                               {isEditing ? (
                                 <input
                                   type="number"
-                                  value={car.downPaymentTarget || ""}
+                                  value={activeCar.downPaymentTarget || ""}
                                   onChange={(e) =>
-                                    handleChange(e, car, "downPaymentTarget")
+                                    handleLocalChange(e, "downPaymentTarget")
                                   }
                                   className="w-24 px-2 py-1 border border-gray-300 rounded text-right text-sm"
                                 />
                               ) : (
-                                <span className="font-bold text-gray-900">{formatCurrency(car.downPaymentTarget)}</span>
+                                <span className="font-bold text-gray-900">{formatCurrency(activeCar.downPaymentTarget)}</span>
                               )}
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-gray-50 pb-2">
@@ -307,7 +326,7 @@ export function CarSimulator({
                             </div>
                           </div>
 
-                          {!isEditing && car.downPaymentTarget > 0 && (
+                          {!isEditing && activeCar.downPaymentTarget > 0 && (
                             <div className="mt-4 pt-1">
                               <div className="flex items-center justify-between mb-1.5">
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -342,12 +361,12 @@ export function CarSimulator({
                                 <input
                                   type="number"
                                   step="0.01"
-                                  value={car.interestRateMonthly || ""}
-                                  onChange={(e) => handleChange(e, car, "interestRateMonthly")}
+                                  value={activeCar.interestRateMonthly || ""}
+                                  onChange={(e) => handleLocalChange(e, "interestRateMonthly")}
                                   className="w-20 px-2 py-1 border border-slate-300 rounded text-right text-sm bg-white"
                                 />
                               ) : (
-                                <span className="font-bold text-slate-900">{car.interestRateMonthly}%</span>
+                                <span className="font-bold text-slate-900">{activeCar.interestRateMonthly}%</span>
                               )}
                             </div>
                             <div className="flex items-center justify-between text-sm">
@@ -355,12 +374,12 @@ export function CarSimulator({
                               {isEditing ? (
                                 <input
                                   type="number"
-                                  value={car.installments || ""}
-                                  onChange={(e) => handleChange(e, car, "installments")}
+                                  value={activeCar.installments || ""}
+                                  onChange={(e) => handleLocalChange(e, "installments")}
                                   className="w-20 px-2 py-1 border border-slate-300 rounded text-right text-sm bg-white"
                                 />
                               ) : (
-                                <span className="font-bold text-slate-900">{car.installments}x</span>
+                                <span className="font-bold text-slate-900">{activeCar.installments}x</span>
                               )}
                             </div>
                           </div>
@@ -370,7 +389,7 @@ export function CarSimulator({
                               Parcela Estimada
                             </p>
                             <p className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2">
-                              {car.installments > 0 ? formatCurrency(pmt) : "R$ 0,00"}
+                              {activeCar.installments > 0 ? formatCurrency(pmt) : "R$ 0,00"}
                             </p>
                             <p className="text-sm text-slate-500 font-medium">
                               Custo Final: <span className="font-bold text-slate-900">{formatCurrency(totalCarCost)}</span>

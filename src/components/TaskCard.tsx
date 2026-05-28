@@ -16,10 +16,12 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -53,15 +55,23 @@ function SortableSubtaskItem({ subtask, onToggle, renderSubtaskDueDate }: Sortab
     transition,
   };
 
+  if (isDragging) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="bg-blue-50/40 border-2 border-dashed border-blue-200 rounded-lg h-[44px] w-full mb-2 flex items-center px-4 select-none"
+      >
+        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Soltar subtarefa aqui</span>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-start gap-2 w-full text-left p-2 transition-colors rounded-lg group ${
-        isDragging
-          ? "opacity-50 ring-2 ring-blue-500 scale-[1.02] shadow-md bg-white border border-blue-400 z-10 relative"
-          : "hover:bg-gray-100 bg-transparent"
-      }`}
+      className="flex items-start gap-2 w-full text-left p-2 transition-colors rounded-lg group hover:bg-gray-100 bg-transparent"
     >
       <button
         type="button"
@@ -107,10 +117,12 @@ interface TaskCardProps {
   onDetailClick: (task: Task) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  isOverlay?: boolean;
 }
 
-export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDetailClick, onMoveUp, onMoveDown }: TaskCardProps) {
+export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDetailClick, onMoveUp, onMoveDown, isOverlay }: TaskCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [activeSubtaskId, setActiveSubtaskId] = useState<string | null>(null);
 
   const {
     attributes,
@@ -119,17 +131,23 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id });
+  } = useSortable({ id: task.id, disabled: isOverlay });
 
-  const style = {
+  const style = isOverlay ? undefined : {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
         distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 50,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -154,10 +172,29 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
   };
 
   const toggleSubtask = (subtaskId: string) => {
-    const updatedSubtasks = task.subtasks.map((st) =>
-      st.id === subtaskId ? { ...st, completed: !st.completed } : st,
+    const targetSubtask = task.subtasks.find((st) => st.id === subtaskId);
+    if (!targetSubtask) return;
+
+    const nextCompletedState = !targetSubtask.completed;
+
+    // Map to update completed value
+    const updated = task.subtasks.map((st) =>
+      st.id === subtaskId ? { ...st, completed: nextCompletedState } : st
     );
-    onUpdate({ ...task, subtasks: updatedSubtasks });
+
+    // Reorder based on transition
+    let reordered = [...updated];
+    const targetIdx = reordered.findIndex((st) => st.id === subtaskId);
+    if (targetIdx !== -1) {
+      const [item] = reordered.splice(targetIdx, 1);
+      if (nextCompletedState) {
+        reordered.push(item);
+      } else {
+        reordered.unshift(item);
+      }
+    }
+
+    onUpdate({ ...task, subtasks: reordered });
   };
 
   const getPriorityColor = (priority: Task["priority"]) => {
@@ -276,20 +313,33 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
   const progress = calculateProgress(task.savedAmount, task.estimatedCost);
   const completedSubtasks = task.subtasks.filter((st) => st.completed).length;
 
+  if (isDragging && !isOverlay) {
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="bg-blue-50/20 border-2 border-dashed border-blue-300 rounded-xl min-h-[140px] mb-4 flex flex-col items-center justify-center text-blue-400 font-semibold text-xs gap-2 select-none"
+      >
+        <GripVertical size={16} className="animate-pulse text-blue-400/80" />
+        <span className="uppercase tracking-wider text-[10px] font-bold">Soltar para reordenar</span>
+      </div>
+    );
+  }
+
   return (
     <motion.div
-      ref={setNodeRef}
+      ref={isOverlay ? undefined : setNodeRef}
       style={style}
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      onClick={() => onDetailClick(task)}
-      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-all cursor-pointer ${
-        isDragging
-          ? "opacity-60 ring-2 ring-blue-500 scale-[1.01] shadow-lg border-blue-400 z-50 relative pointer-events-none"
+      layout={!isOverlay}
+      initial={isOverlay ? undefined : { opacity: 0, y: 10 }}
+      animate={isOverlay ? undefined : { opacity: 1, y: 0 }}
+      onClick={() => !isOverlay && onDetailClick(task)}
+      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-all ${
+        isOverlay
+          ? "border-blue-400 ring-2 ring-blue-500 shadow-2xl pointer-events-none scale-[1.02] filter brightness-[0.98] select-none"
           : task.status === "Concluído"
-          ? "border-green-200 bg-green-50/30"
-          : "border-gray-200 hover:shadow-md"
+          ? "border-green-200 bg-green-50/30 cursor-pointer hover:shadow-md"
+          : "border-gray-200 hover:shadow-md cursor-pointer"
       }`}
     >
       {/* Optional Card Cover Image */}
@@ -321,13 +371,14 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
               <div className="relative inline-flex items-center h-[22px]" onClick={(e) => e.stopPropagation()}>
                 <select
                   value={task.status}
+                  disabled={isOverlay}
                   onChange={(e) =>
                     onUpdate({
                       ...task,
                       status: e.target.value as Task["status"],
                     })
                   }
-                  className={`h-full text-[9px] sm:text-[10px] uppercase font-bold tracking-wider pl-1.5 pr-4 sm:pl-2 sm:pr-5 rounded border focus:outline-none appearance-none cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(task.status)}`}
+                  className={`h-full text-[9px] sm:text-[10px] uppercase font-bold tracking-wider pl-1.5 pr-4 sm:pl-2 sm:pr-5 rounded border focus:outline-none appearance-none cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(task.status)} ${isOverlay ? 'pointer-events-none' : ''}`}
                 >
                   <option value="Não iniciado">NÃO INICIADO</option>
                   <option value="Em andamento">EM ANDAMENTO</option>
@@ -373,6 +424,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
               onClick={(e) => { e.stopPropagation(); onEditClick(task); }}
               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
               title="Editar valores e detalhes"
+              disabled={isOverlay}
             >
               <Edit2 size={18} />
             </button>
@@ -416,6 +468,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
             <button
               onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
               className="w-full text-sm text-gray-600 hover:text-gray-900 flex flex-col gap-2 group"
+              disabled={isOverlay}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
@@ -469,7 +522,12 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+                onDragStart={(event) => setActiveSubtaskId(event.active.id.toString())}
+                onDragEnd={(event) => {
+                  handleDragEnd(event);
+                  setActiveSubtaskId(null);
+                }}
+                onDragCancel={() => setActiveSubtaskId(null)}
               >
                 <SortableContext
                   items={task.subtasks.map((st) => st.id)}
@@ -484,6 +542,21 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
                     />
                   ))}
                 </SortableContext>
+                <DragOverlay dropAnimation={{ duration: 150 }}>
+                  {activeSubtaskId ? (
+                    <div className="bg-white border-2 border-blue-400 shadow-xl px-4 py-2.5 rounded-xl text-sm flex items-center justify-between pointer-events-none scale-105 z-55 rotate-1 select-none w-[calc(100%-8px)]">
+                      <div className="flex items-center gap-2">
+                        <div className="text-gray-300">
+                          <Circle size={20} />
+                        </div>
+                        <span className="font-semibold text-gray-800">
+                          {task.subtasks.find((st) => st.id === activeSubtaskId)?.title}
+                        </span>
+                      </div>
+                      <GripVertical size={16} className="text-blue-500" />
+                    </div>
+                  ) : null}
+                </DragOverlay>
               </DndContext>
             </div>
           </motion.div>
