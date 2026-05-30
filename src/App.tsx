@@ -293,26 +293,43 @@ export default function App() {
     const isNew = !tasks.find((t) => t.id === updatedTask.id);
     const previousTasks = [...tasks];
 
+    // Enforce smart status rules based on subtasks
+    let enforcedStatus = updatedTask.status;
+    const totalSubtasks = updatedTask.subtasks?.length || 0;
+    const completedCount = updatedTask.subtasks?.filter(st => st.completed).length || 0;
+
+    if (enforcedStatus !== "Pendente" && totalSubtasks > 0) {
+      if (completedCount === totalSubtasks) {
+        enforcedStatus = "Concluído";
+      } else if (completedCount > 0) {
+        enforcedStatus = "Em andamento";
+      } else if (completedCount === 0 && (updatedTask.status === "Concluído" || updatedTask.status === "Em andamento")) {
+        enforcedStatus = "Não iniciado";
+      }
+    }
+
+    const taskToSave = { ...updatedTask, status: enforcedStatus };
+
     if (isNew) {
-      setTasks([updatedTask, ...tasks]);
-      const newTaskOrder = [updatedTask.id, ...taskOrder];
+      setTasks([taskToSave, ...tasks]);
+      const newTaskOrder = [taskToSave.id, ...taskOrder];
       setTaskOrder(newTaskOrder);
       localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
       supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
     } else {
-      const oldTask = tasks.find((t) => t.id === updatedTask.id);
+      const oldTask = tasks.find((t) => t.id === taskToSave.id);
       const wasCompleted = oldTask?.status === "Concluído";
-      const isCompleted = updatedTask.status === "Concluído";
+      const isCompleted = taskToSave.status === "Concluído";
 
-      setTasks(tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+      setTasks(tasks.map((t) => (t.id === taskToSave.id ? taskToSave : t)));
 
       if (wasCompleted && !isCompleted) {
-        const newTaskOrder = [updatedTask.id, ...taskOrder.filter((id) => id !== updatedTask.id)];
+        const newTaskOrder = [taskToSave.id, ...taskOrder.filter((id) => id !== taskToSave.id)];
         setTaskOrder(newTaskOrder);
         localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
         supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
       } else if (!wasCompleted && isCompleted) {
-        const newTaskOrder = [...taskOrder.filter((id) => id !== updatedTask.id), updatedTask.id];
+        const newTaskOrder = [...taskOrder.filter((id) => id !== taskToSave.id), taskToSave.id];
         setTaskOrder(newTaskOrder);
         localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
         supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
@@ -321,7 +338,7 @@ export default function App() {
 
     setSyncing(true);
     try {
-      await api.saveTask(session.user.id, updatedTask);
+      await api.saveTask(session.user.id, taskToSave);
     } catch (err: any) {
       console.error(err);
       alert("Erro ao salvar tarefa: " + (err.message || JSON.stringify(err)));

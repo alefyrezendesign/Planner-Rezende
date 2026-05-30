@@ -172,6 +172,25 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
     }
   };
 
+  const getSmartStatus = (currentStatus: Task["status"], subtasks: Subtask[], forceManualChange: boolean = false): Task["status"] => {
+    if (currentStatus === "Pendente") return "Pendente";
+    
+    const total = subtasks.length;
+    const completed = subtasks.filter(st => st.completed).length;
+
+    if (total > 0) {
+      if (completed === total) {
+        return "Concluído";
+      } else if (completed > 0) {
+        return "Em andamento";
+      } else if (completed === 0 && !forceManualChange) {
+        return "Não iniciado";
+      }
+    }
+    
+    return currentStatus;
+  }
+
   const toggleSubtask = (subtaskId: string) => {
     const targetSubtask = task.subtasks.find((st) => st.id === subtaskId);
     if (!targetSubtask) return;
@@ -195,23 +214,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
       }
     }
 
-    const totalSubtasks = reordered.length;
-    const completedCount = reordered.filter((st) => st.completed).length;
-    let nextStatus = task.status;
-
-    if (completedCount === totalSubtasks && totalSubtasks > 0) {
-      nextStatus = "Concluído";
-    } else if (nextCompletedState) {
-      if (task.status !== "Pendente") {
-        nextStatus = "Em andamento";
-      }
-    } else if (!nextCompletedState) {
-      if (task.status === "Concluído") {
-        nextStatus = "Em andamento";
-      } else if (task.status === "Em andamento" && completedCount === 0) {
-        nextStatus = "Não iniciado";
-      }
-    }
+    const nextStatus = getSmartStatus(task.status, reordered, false);
 
     onUpdate({ ...task, subtasks: reordered, status: nextStatus });
   };
@@ -419,7 +422,8 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onUpdate({ ...task, status: s });
+                              const enforcedStatus = getSmartStatus(s, task.subtasks, true);
+                              onUpdate({ ...task, status: enforcedStatus });
                               setIsStatusMenuOpen(false);
                             }}
                             className={`text-left px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider hover:bg-gray-50 transition-colors flex items-center ${task.status === s ? 'bg-gray-50' : 'bg-white'}`}
