@@ -122,6 +122,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDetailClick, onMoveUp, onMoveDown, isOverlay }: TaskCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState(false);
   const [activeSubtaskId, setActiveSubtaskId] = useState<string | null>(null);
 
   const {
@@ -194,7 +195,25 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
       }
     }
 
-    onUpdate({ ...task, subtasks: reordered });
+    const totalSubtasks = reordered.length;
+    const completedCount = reordered.filter((st) => st.completed).length;
+    let nextStatus = task.status;
+
+    if (completedCount === totalSubtasks && totalSubtasks > 0) {
+      nextStatus = "Concluído";
+    } else if (nextCompletedState) {
+      if (task.status !== "Pendente") {
+        nextStatus = "Em andamento";
+      }
+    } else if (!nextCompletedState) {
+      if (task.status === "Concluído") {
+        nextStatus = "Em andamento";
+      } else if (task.status === "Em andamento" && completedCount === 0) {
+        nextStatus = "Não iniciado";
+      }
+    }
+
+    onUpdate({ ...task, subtasks: reordered, status: nextStatus });
   };
 
   const getPriorityColor = (priority: Task["priority"]) => {
@@ -211,13 +230,13 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
   const getStatusColor = (status: Task["status"]) => {
     switch (status) {
       case "Não iniciado":
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-700 border-gray-200";
       case "Em andamento":
-        return "bg-blue-50 text-blue-700 border-blue-100";
+        return "bg-blue-50 text-blue-700 border-blue-200";
       case "Pendente":
-        return "bg-orange-50 text-orange-700 border-orange-100";
+        return "bg-orange-50 text-orange-700 border-orange-200";
       case "Concluído":
-        return "bg-green-50 text-green-700 border-green-100";
+        return "bg-green-50 text-green-700 border-green-200";
     }
   };
 
@@ -334,7 +353,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
       initial={isOverlay ? undefined : { opacity: 0, y: 10 }}
       animate={isOverlay ? undefined : { opacity: 1, y: 0 }}
       onClick={() => !isOverlay && onDetailClick(task)}
-      className={`bg-white border rounded-xl overflow-hidden mb-4 shadow-sm transition-all ${
+      className={`bg-white border rounded-xl mb-4 shadow-sm transition-all ${isStatusMenuOpen ? 'relative z-50' : 'relative z-10'} ${
         isOverlay
           ? "border-blue-400 ring-2 ring-blue-500 shadow-2xl pointer-events-none scale-[1.02] filter brightness-[0.98] select-none"
           : task.status === "Concluído"
@@ -344,7 +363,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
     >
       {/* Optional Card Cover Image */}
       {task.imageUrl && (
-        <div className="w-full h-28 sm:h-36 overflow-hidden border-b border-gray-100">
+        <div className="w-full h-28 sm:h-36 overflow-hidden border-b border-gray-100 rounded-t-xl">
           <img
             src={task.imageUrl}
             alt={task.title}
@@ -368,26 +387,52 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
               >
                 {task.priority}
               </div>
-              <div className="relative inline-flex items-center h-[22px]" onClick={(e) => e.stopPropagation()}>
-                <select
-                  value={task.status}
+              <div className="relative inline-flex items-center" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
                   disabled={isOverlay}
-                  onChange={(e) =>
-                    onUpdate({
-                      ...task,
-                      status: e.target.value as Task["status"],
-                    })
-                  }
-                  className={`h-full text-[9px] sm:text-[10px] uppercase font-bold tracking-wider pl-1.5 pr-4 sm:pl-2 sm:pr-5 rounded border focus:outline-none appearance-none cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(task.status)} ${isOverlay ? 'pointer-events-none' : ''}`}
+                  onClick={() => setIsStatusMenuOpen(!isStatusMenuOpen)}
+                  className={`flex items-center gap-1.5 h-[22px] text-[9px] sm:text-[10px] uppercase font-bold tracking-wider px-1.5 sm:px-2 rounded border focus:outline-none cursor-pointer hover:opacity-80 transition-all ${getStatusColor(task.status)} ${isOverlay ? 'pointer-events-none' : ''}`}
                 >
-                  <option value="Não iniciado">NÃO INICIADO</option>
-                  <option value="Em andamento">EM ANDAMENTO</option>
-                  <option value="Pendente">PENDENTE</option>
-                  <option value="Concluído">CONCLUÍDO</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-1 flex items-center opacity-50">
-                  <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                </div>
+                  <span className="truncate">{task.status}</span>
+                  <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3 opacity-70 shrink-0" />
+                </button>
+                
+                <AnimatePresence>
+                  {isStatusMenuOpen && (
+                    <>
+                      {/* Invisible Backdrop for click-outside */}
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={(e) => { e.stopPropagation(); setIsStatusMenuOpen(false); }} 
+                      />
+                      <motion.div
+                        initial={{ opacity: 0, y: -5, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -5, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-0 mt-1.5 w-auto whitespace-nowrap bg-white border border-gray-100 shadow-xl rounded-lg overflow-hidden z-50 flex flex-col py-1.5"
+                      >
+                        {(["Não iniciado", "Em andamento", "Pendente", "Concluído"] as const).map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onUpdate({ ...task, status: s });
+                              setIsStatusMenuOpen(false);
+                            }}
+                            className={`text-left px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider hover:bg-gray-50 transition-colors flex items-center ${task.status === s ? 'bg-gray-50' : 'bg-white'}`}
+                          >
+                            <div className={`inline-block px-1.5 py-0.5 rounded border ${getStatusColor(s)}`}>
+                              {s}
+                            </div>
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
               <div className="hidden sm:flex items-center ml-auto sm:ml-2">
                 {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
@@ -516,7 +561,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
-            className="border-t border-gray-100 bg-gray-50/50 overflow-hidden relative z-10"
+            className="border-t border-gray-100 bg-gray-50/50 rounded-b-xl overflow-hidden relative z-10"
           >
             <div className="p-4 space-y-2">
               <DndContext
