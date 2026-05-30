@@ -5,7 +5,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
@@ -63,38 +64,48 @@ function SortableSubtask({
         onChange={(e) => onUpdateTitle(subtask.id, e.target.value)}
         className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
         placeholder="Nome da subtarefa"
-        onPointerDown={(e) => e.stopPropagation()}
       />
 
-      <div className="relative flex-shrink-0" onPointerDown={(e) => e.stopPropagation()}>
-        <input
-          type="date"
-          value={subtask.dueDate || ""}
-          onChange={(e) => onUpdateDate(subtask.id, e.target.value)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-        <div
-          className={`flex items-center justify-center p-2 rounded-lg border transition-colors ${
-            subtask.dueDate
-              ? "border-blue-200 bg-blue-50 text-blue-700"
-              : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
-          }`}
-        >
-          <Calendar size={16} />
-          {subtask.dueDate && (
-            <span className="text-[10px] ml-1 font-medium whitespace-nowrap">
-              {new Date(subtask.dueDate + "T12:00:00").toLocaleDateString("pt-BR", {
-                day: "2-digit",
-                month: "2-digit",
-              })}
-            </span>
-          )}
+      <div className="relative flex-shrink-0 flex items-center gap-1">
+        <div className="relative">
+          <input
+            type="date"
+            value={subtask.dueDate || ""}
+            onChange={(e) => onUpdateDate(subtask.id, e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          />
+          <div
+            className={`flex items-center justify-center p-2 rounded-lg border transition-colors ${
+              subtask.dueDate
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
+            }`}
+          >
+            <Calendar size={16} />
+            {subtask.dueDate && (
+              <span className="text-[10px] ml-1 font-medium whitespace-nowrap">
+                {new Date(subtask.dueDate + "T12:00:00").toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
         </div>
+        {subtask.dueDate && (
+          <button
+            type="button"
+            onClick={() => onUpdateDate(subtask.id, "")}
+            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            title="Remover data"
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
       <button
         type="button"
-        onPointerDown={(e) => e.stopPropagation()}
         onClick={() => onDelete(subtask.id)}
         className="flex-shrink-0 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
       >
@@ -140,9 +151,15 @@ export function EditTaskModal({
   }));
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 5, // minimum drag distance before triggering
+        distance: 5,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 50,
+        tolerance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -359,13 +376,25 @@ export function EditTaskModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Data de Vencimento
             </label>
-            <input
-              type="date"
-              name="dueDate"
-              value={formData.dueDate || ""}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                name="dueDate"
+                value={formData.dueDate || ""}
+                onChange={handleChange}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {formData.dueDate && (
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, dueDate: "" }))}
+                  className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-100 transition-colors"
+                  title="Remover data"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
