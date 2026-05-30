@@ -55,23 +55,15 @@ function SortableSubtaskItem({ subtask, onToggle, renderSubtaskDueDate }: Sortab
     transition,
   };
 
-  if (isDragging) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="bg-blue-50/40 border-2 border-dashed border-blue-200 rounded-lg h-[44px] w-full mb-2 flex items-center px-4 select-none"
-      >
-        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Soltar subtarefa aqui</span>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-start gap-2 w-full text-left p-2 transition-colors rounded-lg group hover:bg-gray-100 bg-transparent"
+      className={`flex items-start gap-2 w-full text-left p-2 transition-colors rounded-lg group ${
+        isDragging
+          ? "border-2 border-dashed border-blue-400 bg-blue-50/40 opacity-40 shadow-inner pointer-events-none"
+          : "border-2 border-transparent hover:bg-gray-100 bg-transparent"
+      }`}
     >
       <button
         type="button"
@@ -345,19 +337,6 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
   const progress = calculateProgress(task.savedAmount, task.estimatedCost);
   const completedSubtasks = task.subtasks.filter((st) => st.completed).length;
 
-  if (isDragging && !isOverlay) {
-    return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="bg-blue-50/20 border-2 border-dashed border-blue-300 rounded-xl min-h-[140px] mb-4 flex flex-col items-center justify-center text-blue-400 font-semibold text-xs gap-2 select-none"
-      >
-        <GripVertical size={16} className="animate-pulse text-blue-400/80" />
-        <span className="uppercase tracking-wider text-[10px] font-bold">Soltar para reordenar</span>
-      </div>
-    );
-  }
-
   return (
     <motion.div
       ref={isOverlay ? undefined : setNodeRef}
@@ -369,6 +348,8 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
       className={`bg-white border rounded-xl mb-4 shadow-sm transition-all ${isStatusMenuOpen ? 'relative z-50' : 'relative z-10'} ${
         isOverlay
           ? "border-blue-400 ring-2 ring-blue-500 shadow-2xl pointer-events-none scale-[1.02] filter brightness-[0.98] select-none"
+          : isDragging
+          ? "border-2 border-dashed border-blue-400 bg-blue-50/40 opacity-40 shadow-inner"
           : task.status === "Concluído"
           ? "border-green-200 bg-green-50/30 cursor-pointer hover:shadow-md"
           : task.status === "Pendente"

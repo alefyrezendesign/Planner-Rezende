@@ -10,6 +10,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -53,7 +54,7 @@ function SortableSubtask({
       style={style}
       className={`flex gap-2 items-center p-2 rounded-xl border transition-colors select-none ${
         isDragging
-          ? "opacity-50 ring-2 ring-blue-500 scale-[1.02] shadow-md bg-blue-50/40 border-blue-400 z-10 relative"
+          ? "opacity-40 border-2 border-dashed border-blue-400 bg-blue-50/40 pointer-events-none"
           : "border-gray-200 bg-white hover:border-gray-300"
       }`}
     >
@@ -143,6 +144,7 @@ export function EditTaskModal({
   onSave,
   onDelete,
 }: EditTaskModalProps) {
+  const [activeSubtaskId, setActiveSubtaskId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Task>(() => ({
     ...task,
     description: task.description || "",
@@ -562,7 +564,12 @@ export function EditTaskModal({
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
+                onDragStart={(event) => setActiveSubtaskId(event.active.id.toString())}
+                onDragEnd={(event) => {
+                  handleDragEnd(event);
+                  setActiveSubtaskId(null);
+                }}
+                onDragCancel={() => setActiveSubtaskId(null)}
               >
                 <SortableContext
                   items={formData.subtasks.map((st) => st.id)}
@@ -578,6 +585,18 @@ export function EditTaskModal({
                     />
                   ))}
                 </SortableContext>
+                <DragOverlay dropAnimation={{ duration: 150 }}>
+                  {activeSubtaskId ? (
+                    <div className="flex gap-2 items-center p-2 rounded-xl border border-blue-400 bg-white shadow-xl scale-[1.02] rotate-1 select-none w-full pointer-events-none z-50">
+                      <div className="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 flex items-center">
+                        <span className="text-gray-700 truncate">{formData.subtasks.find(st => st.id === activeSubtaskId)?.title || "Subtarefa"}</span>
+                      </div>
+                      <div className="flex-shrink-0 p-2 text-blue-500 rounded-lg">
+                        <GripVertical size={18} />
+                      </div>
+                    </div>
+                  ) : null}
+                </DragOverlay>
               </DndContext>
               {formData.subtasks.length === 0 && (
                 <p className="text-sm text-gray-500 italic">
