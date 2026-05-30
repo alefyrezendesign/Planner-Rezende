@@ -243,7 +243,25 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
     }
   };
 
-  const renderTaskDueDate = (dueDate?: string, isCompleted?: boolean) => {
+  const renderTaskDueDate = (dueDate?: string, isCompleted?: boolean, completedAt?: string) => {
+    if (isCompleted && completedAt) {
+      const compDate = new Date(completedAt);
+      return (
+        <div className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
+          <CalendarClock size={16} /> <span>Concluído: {compDate.toLocaleDateString("pt-BR")}</span>
+        </div>
+      );
+    }
+    
+    if (isCompleted && !completedAt && dueDate) {
+      const due = new Date(dueDate + "T00:00:00");
+      return (
+        <div className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
+           <CalendarClock size={16} /> <span>Prazo: {due.toLocaleDateString("pt-BR")}</span>
+        </div>
+      );
+    }
+
     if (!dueDate) {
       return (
         <div className="flex items-center gap-1.5 text-sm font-medium text-gray-400">
@@ -257,14 +275,6 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
     const due = new Date(dueDate + "T00:00:00");
     const diffTime = due.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (isCompleted) {
-      return (
-        <div className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
-          <CalendarClock size={16} /> <span>Prazo: {due.toLocaleDateString("pt-BR")}</span>
-        </div>
-      );
-    }
 
     if (diffDays < 0) {
       return (
@@ -361,7 +371,9 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
           ? "border-blue-400 ring-2 ring-blue-500 shadow-2xl pointer-events-none scale-[1.02] filter brightness-[0.98] select-none"
           : task.status === "Concluído"
           ? "border-green-200 bg-green-50/30 cursor-pointer hover:shadow-md"
-          : "border-gray-200 hover:shadow-md cursor-pointer"
+          : task.status === "Pendente"
+          ? "border-red-400 ring-1 ring-red-400 shadow-sm cursor-pointer hover:shadow-md bg-red-50/10"
+          : "border-gray-200 hover:shadow-md cursor-pointer hover:border-gray-300"
       }`}
     >
       {/* Optional Card Cover Image */}
@@ -439,7 +451,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
                 </AnimatePresence>
               </div>
               <div className="hidden sm:flex items-center ml-auto sm:ml-2">
-                {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
+                {renderTaskDueDate(task.dueDate, task.status === "Concluído", task.completedAt)}
               </div>
             </div>
             
@@ -465,7 +477,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
             )}
             
             <div className="sm:hidden mt-2.5 mb-2">
-              {renderTaskDueDate(task.dueDate, task.status === "Concluído")}
+              {renderTaskDueDate(task.dueDate, task.status === "Concluído", task.completedAt)}
             </div>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>

@@ -18,6 +18,7 @@ export interface Task {
   savedAmount: number;
   subtasks: Subtask[];
   dueDate?: string;
+  completedAt?: string;
   description?: string;
   imageUrl?: string;
   links?: { id: string; url: string; title?: string }[];

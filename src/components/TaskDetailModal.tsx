@@ -116,7 +116,12 @@ export function TaskDetailModal({
             <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
               {task.title}
             </h1>
-            {task.dueDate ? (
+            {task.status === "Concluído" && task.completedAt ? (
+              <p className="flex items-center gap-1.5 text-sm font-medium text-green-600 mt-2">
+                <Calendar size={15} />
+                Concluído em: <span>{new Date(task.completedAt).toLocaleDateString("pt-BR")}</span>
+              </p>
+            ) : task.dueDate ? (
               <p className="flex items-center gap-1.5 text-sm font-medium text-gray-500 mt-2">
                 <Calendar size={15} className="text-gray-400" />
                 Prazo final: <span className="text-gray-900">{new Date(task.dueDate + "T12:00:00").toLocaleDateString("pt-BR")}</span>

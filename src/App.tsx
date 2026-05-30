@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { initialTasks } from "./data";
 import { Task, CarScenario, RealEstateScenario } from "./types";
 import { TaskCard } from "./components/TaskCard";
@@ -21,6 +21,8 @@ import {
   Home,
   Wallet,
   ChevronRight,
+  X,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -96,9 +98,10 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | "Todas">(
-    "Todas",
-  );
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "tasks" | "cars" | "houses" | "finances"
   >("tasks");
@@ -308,19 +311,28 @@ export default function App() {
       }
     }
 
-    const taskToSave = { ...updatedTask, status: enforcedStatus };
+    let taskToSave = { ...updatedTask, status: enforcedStatus };
+
+    const oldTask = tasks.find((t) => t.id === taskToSave.id);
+    const wasCompleted = oldTask?.status === "Concluído";
+    const isCompleted = taskToSave.status === "Concluído";
+
+    if (isCompleted && !wasCompleted) {
+      taskToSave.completedAt = new Date().toISOString();
+    } else if (!isCompleted && wasCompleted) {
+      taskToSave.completedAt = undefined;
+    }
 
     if (isNew) {
+      if (isCompleted) {
+         taskToSave.completedAt = new Date().toISOString();
+      }
       setTasks([taskToSave, ...tasks]);
       const newTaskOrder = [taskToSave.id, ...taskOrder];
       setTaskOrder(newTaskOrder);
       localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
       supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } });
     } else {
-      const oldTask = tasks.find((t) => t.id === taskToSave.id);
-      const wasCompleted = oldTask?.status === "Concluído";
-      const isCompleted = taskToSave.status === "Concluído";
-
       setTasks(tasks.map((t) => (t.id === taskToSave.id ? taskToSave : t)));
 
       if (wasCompleted && !isCompleted) {
@@ -506,8 +518,13 @@ export default function App() {
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
-    if (selectedCategory !== "Todas") {
-      result = tasks.filter((t) => t.category === selectedCategory);
+
+    // Filters integration (will be based on states selectedCategories and selectedStatuses)
+    if (selectedCategories.length > 0) {
+      result = result.filter(t => selectedCategories.includes(t.category));
+    }
+    if (selectedStatuses.length > 0) {
+      result = result.filter(t => selectedStatuses.includes(t.status));
     }
 
     const priorityWeight = { Alta: 3, Média: 2, Baixa: 1 };
@@ -515,6 +532,12 @@ export default function App() {
     return [...result].sort((a, b) => {
       if (a.status === "Concluído" && b.status !== "Concluído") return 1;
       if (a.status !== "Concluído" && b.status === "Concluído") return -1;
+      if (a.status === "Concluído" && b.status === "Concluído") return 0;
+
+      const isTopA = a.status === "Em andamento" || a.status === "Pendente";
+      const isTopB = b.status === "Em andamento" || b.status === "Pendente";
+      if (isTopA && !isTopB) return -1;
+      if (!isTopA && isTopB) return 1;
 
       const indexA = taskOrder.indexOf(a.id);
       const indexB = taskOrder.indexOf(b.id);
@@ -525,7 +548,7 @@ export default function App() {
 
       return priorityWeight[b.priority] - priorityWeight[a.priority];
     });
-  }, [tasks, selectedCategory, taskOrder]);
+  }, [tasks, selectedCategories, selectedStatuses, taskOrder]);
 
   const activeFilteredTasks = useMemo(() => {
     return filteredTasks.filter((t) => t.status !== "Concluído");
@@ -714,38 +737,78 @@ export default function App() {
               <>
                 <DashboardStats tasks={tasks} />
                 
-                {/* Category Filters */}
-                <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full overflow-hidden">
-                  <div className="flex items-center w-full min-w-0">
-                    <div className="overflow-x-auto w-full hide-scrollbar pb-1 sm:pb-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-                      <div className="flex flex-nowrap items-center gap-2">
-                        {categories.map((cat) => (
-                          <button
-                            key={cat}
-                            onClick={() => setSelectedCategory(cat)}
-                            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
-                              selectedCategory === cat
-                                ? "bg-gray-900 text-white shadow-sm"
-                                : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                            }`}
-                          >
-                            {cat}
-                          </button>
-                        ))}
-                      </div>
+                {/* Filters */}
+                <div className="mb-6 flex flex-col gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 hide-scrollbar w-full sm:w-auto">
+                      <button
+                        onClick={() => {
+                          setSelectedCategories([]);
+                          setSelectedStatuses([]);
+                        }}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors flex-shrink-0 ${
+                          selectedCategories.length === 0 && selectedStatuses.length === 0
+                            ? "bg-gray-900 text-white shadow-sm"
+                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        Todas
+                      </button>
+                      <button
+                        onClick={() => setIsCategoryModalOpen(true)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 ${
+                          selectedCategories.length > 0
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        Categorias {selectedCategories.length > 0 && <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">{selectedCategories.length}</span>}
+                      </button>
+                      <button
+                        onClick={() => setIsStatusModalOpen(true)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 ${
+                          selectedStatuses.length > 0
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        Status {selectedStatuses.length > 0 && <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full">{selectedStatuses.length}</span>}
+                      </button>
                     </div>
-                    {/* Seta lateral indicando que tem mais no mobile */}
-                    <div className="sm:hidden flex items-center justify-center pl-2 text-gray-400 shrink-0 pb-1">
-                      <ChevronRight size={20} strokeWidth={2.5} />
-                    </div>
+                    <button
+                      onClick={handleCreateNewTask}
+                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm w-full sm:w-auto whitespace-nowrap flex-shrink-0"
+                    >
+                      <Plus size={18} />
+                      Nova Tarefa
+                    </button>
                   </div>
-                  <button
-                    onClick={handleCreateNewTask}
-                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors shadow-sm w-full sm:w-auto whitespace-nowrap"
-                  >
-                    <Plus size={18} />
-                    Nova Tarefa
-                  </button>
+                  
+                  {/* Active Filters Chips */}
+                  {(selectedCategories.length > 0 || selectedStatuses.length > 0) && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider mr-1">Filtros:</span>
+                      {selectedCategories.map(cat => (
+                        <span key={`cat-${cat}`} className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                          <span className="font-medium">{cat}</span>
+                          <button onClick={() => setSelectedCategories(prev => prev.filter(c => c !== cat))} className="hover:text-red-500 rounded-full p-0.5 transition-colors">
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                      {selectedStatuses.map(status => (
+                        <span key={`status-${status}`} className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                          <span className="text-xs uppercase font-bold tracking-wider">{status}</span>
+                          <button onClick={() => setSelectedStatuses(prev => prev.filter(s => s !== status))} className="hover:text-red-500 rounded-full p-0.5 transition-colors">
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                      <button onClick={() => { setSelectedCategories([]); setSelectedStatuses([]); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium ml-2">
+                        Limpar todos
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Tasks View */}
@@ -766,9 +829,9 @@ export default function App() {
                             Nenhuma tarefa encontrada
                           </h3>
                           <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
-                            {selectedCategory === "Todas"
+                            {selectedCategories.length === 0 && selectedStatuses.length === 0
                               ? "Comece adicionando uma nova meta, projeto ou tarefa financeira."
-                              : `Não há tarefas na categoria "${selectedCategory}".`}
+                              : "Nenhuma tarefa corresponde aos filtros selecionados."}
                           </p>
                         </div>
                         <button
@@ -797,17 +860,31 @@ export default function App() {
                               strategy={verticalListSortingStrategy}
                             >
                               <div className="space-y-4">
-                                {activeFilteredTasks.map((task, idx) => (
-                                  <TaskCard
-                                    key={task.id}
-                                    task={task}
-                                    index={idx + 1}
-                                    totalTasks={activeFilteredTasks.length}
-                                    onUpdate={handleUpdateTask}
-                                    onEditClick={setEditingTask}
-                                    onDetailClick={setViewingTask}
-                                  />
-                                ))}
+                                {activeFilteredTasks.map((task, idx) => {
+                                  const isPriority = task.status === "Em andamento" || task.status === "Pendente";
+                                  const prevTask = idx > 0 ? activeFilteredTasks[idx - 1] : null;
+                                  const prevIsPriority = prevTask ? (prevTask.status === "Em andamento" || prevTask.status === "Pendente") : false;
+                                  
+                                  const renderDivider = idx > 0 && prevIsPriority && !isPriority;
+
+                                  return (
+                                    <Fragment key={task.id}>
+                                      {renderDivider && (
+                                        <div className="py-4 flex justify-center" aria-hidden="true">
+                                          <div className="w-3/4 sm:w-1/2 border-t border-gray-200/60 border-dashed"></div>
+                                        </div>
+                                      )}
+                                      <TaskCard
+                                        task={task}
+                                        index={idx + 1}
+                                        totalTasks={activeFilteredTasks.length}
+                                        onUpdate={handleUpdateTask}
+                                        onEditClick={setEditingTask}
+                                        onDetailClick={setViewingTask}
+                                      />
+                                    </Fragment>
+                                  );
+                                })}
                               </div>
                             </SortableContext>
                             <DragOverlay adjustScale={false} dropAnimation={{ duration: 150 }}>
@@ -918,6 +995,101 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {/* Category Filter Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsCategoryModalOpen(false)} />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-semibold text-lg text-gray-900">Filtrar por Categoria</h3>
+              <button onClick={() => setIsCategoryModalOpen(false)} className="p-1 text-gray-400 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-2">
+              {categories.filter(c => c !== "Todas").map((cat) => {
+                const isSelected = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedCategories(prev => prev.filter(c => c !== cat));
+                      } else {
+                        setSelectedCategories(prev => [...prev, cat]);
+                      }
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${
+                      isSelected ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-medium text-sm">{cat}</span>
+                    {isSelected && <Check size={18} className="text-blue-600" />}
+                  </button>
+                );
+              })}
+              {categories.length <= 1 && (
+                <div className="text-center text-gray-500 text-sm py-4">Nenhuma categoria encontrada.</div>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+              <button onClick={() => setSelectedCategories([])} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                Limpar
+              </button>
+              <button onClick={() => setIsCategoryModalOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm">
+                Aplicar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Status Filter Modal */}
+      {isStatusModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setIsStatusModalOpen(false)} />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-semibold text-lg text-gray-900">Filtrar por Status</h3>
+              <button onClick={() => setIsStatusModalOpen(false)} className="p-1 text-gray-400 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-2">
+              {(["Não iniciado", "Em andamento", "Pendente", "Concluído"] as const).map((status) => {
+                const isSelected = selectedStatuses.includes(status);
+                return (
+                  <button
+                    key={status}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedStatuses(prev => prev.filter(s => s !== status));
+                      } else {
+                        setSelectedStatuses(prev => [...prev, status]);
+                      }
+                    }}
+                    className={`flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${
+                      isSelected ? "border-blue-500 bg-blue-50 text-blue-700" : "border-gray-200 hover:bg-gray-50 text-gray-700"
+                    }`}
+                  >
+                    <span className="font-medium text-sm">{status}</span>
+                    {isSelected && <Check size={18} className="text-blue-600" />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+              <button onClick={() => setSelectedStatuses([])} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                Limpar
+              </button>
+              <button onClick={() => setIsStatusModalOpen(false)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm">
+                Aplicar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
