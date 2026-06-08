@@ -319,7 +319,21 @@ export const Finances = ({ session }: FinancesProps) => {
             </button>
           ))}
         </div>
-        
+        {/* Botão de Emergência para Zerar Despesas */}
+        <div className="px-2 md:px-4 mt-2 md:mt-0 flex justify-end">
+          <button
+            onClick={() => {
+              if (window.confirm('Tem certeza que deseja apagar TODAS as despesas? Essa ação é irreversível.')) {
+                syncExpenses([]);
+              }
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-[10px] sm:text-xs font-bold text-rose-500 hover:text-white bg-rose-50 hover:bg-rose-500 border border-rose-100 rounded-xl transition-all cursor-pointer"
+            title="Apagar todas as despesas cadastradas"
+          >
+            <Trash2 size={14} />
+            <span className="hidden sm:inline">Zerar Despesas</span>
+          </button>
+        </div>
 
       </div>
 
