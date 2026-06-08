@@ -14,6 +14,7 @@ export interface TransactionFormData {
   recurrenceType: 'unique' | 'fixed' | 'installments';
   installmentsCount?: number;
   active?: boolean;
+  isLimit?: boolean;
 }
 
 export type EditScope = 'single' | 'future' | 'all';
@@ -36,6 +37,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialType, itemToE
   const [recType, setRecType] = useState<'unique' | 'fixed' | 'installments'>('unique');
   const [instCount, setInstCount] = useState('');
   const [activeStatus, setActiveStatus] = useState<boolean>(true);
+  const [isLimit, setIsLimit] = useState<boolean>(false);
   const [editScope, setEditScope] = useState<EditScope>('single');
 
   useEffect(() => {
@@ -46,10 +48,11 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialType, itemToE
         setDesc(itemToEdit.description);
         setVal(String(itemToEdit.value));
         setMonth(itemToEdit.month);
-        setCat(itemToEdit.category || (type === 'revenue' ? 'Outros' : 'Outros'));
+        setCat(itemToEdit.category || (itemToEdit.type === 'revenue' ? 'Outros' : 'Outros'));
         setRecType(itemToEdit.recurrenceType || 'unique');
         setInstCount(itemToEdit.installmentsCount ? String(itemToEdit.installmentsCount) : '');
         setActiveStatus(itemToEdit.active !== false);
+        setIsLimit(itemToEdit.isLimit || false);
         setEditScope('single'); // default
       } else {
         setStep(initialType ? 2 : 1);
@@ -61,6 +64,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialType, itemToE
         setRecType('unique');
         setInstCount('');
         setActiveStatus(true);
+        setIsLimit(false);
         setEditScope('single');
       }
     }
@@ -91,6 +95,7 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialType, itemToE
       recurrenceType: recType,
       installmentsCount: recType === 'installments' ? Number(instCount) : undefined,
       active: activeStatus,
+      isLimit: type === 'expense' ? isLimit : false,
     }, isEditing ? editScope : undefined);
     
     onClose();
@@ -193,6 +198,27 @@ export const TransactionModal = ({ isOpen, onClose, onSave, initialType, itemToE
                         <option key={i} value={i}>{name}</option>
                       ))}
                     </select>
+                  </div>
+                )}
+
+                {/* Limit Toggle for Expenses */}
+                {type === 'expense' && (
+                  <div className="pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-100 p-3 rounded-xl hover:bg-slate-100 transition-colors">
+                      <div className={`w-10 h-6 rounded-full transition-colors relative ${isLimit ? 'bg-indigo-500' : 'bg-slate-300'}`}>
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all ${isLimit ? 'left-5' : 'left-1'}`} />
+                      </div>
+                      <input 
+                        type="checkbox" 
+                        className="hidden" 
+                        checked={isLimit} 
+                        onChange={(e) => setIsLimit(e.target.checked)} 
+                      />
+                      <div>
+                        <span className="text-sm font-bold text-slate-700 block">É um Limite de Gastos?</span>
+                        <span className="text-[10px] font-medium text-slate-500 block leading-tight">Marque se não for uma conta fixa, mas um teto planejado (ex: "Lazer R$ 200").</span>
+                      </div>
+                    </label>
                   </div>
                 )}
 

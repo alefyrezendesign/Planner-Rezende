@@ -3,6 +3,7 @@ export interface Revenue {
   description: string;
   value: number;
   month: number; // Month index for this specific item (0-11)
+  year?: number; // Added for multi-year support
   category?: string;
   isRecurring?: boolean; // Legacy
   recurrenceType?: 'unique' | 'fixed' | 'installments';
@@ -17,6 +18,7 @@ export interface Expense {
   description: string;
   value: number;
   month: number; // Month index for this specific item (0-11)
+  year?: number; // Added for multi-year support
   category?: string;
   isRecurring?: boolean; // Legacy
   recurrenceType?: 'unique' | 'fixed' | 'installments';
@@ -24,6 +26,7 @@ export interface Expense {
   installmentsCount?: number;
   installmentIndex?: number; // 1-based index
   active?: boolean; // For fixed to pause
+  isLimit?: boolean; // Se true, significa que não é uma despesa engessada, mas um teto de gastos
 }
 
 export interface CaixinhaDeposit {
@@ -58,6 +61,7 @@ export interface Debt {
   installmentsCount: number;
   installmentValue: number;
   startMonth: number;
+  startYear?: number; // Added for multi-year support
   status: 'Ativo' | 'Pausado' | 'Quitado';
   paidInstallments?: number;
   observations?: string;

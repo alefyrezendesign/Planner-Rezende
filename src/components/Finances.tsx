@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Wallet, Receipt, PiggyBank, Plus, Trash2 } from 'lucide-react';
+import { Wallet, Receipt, PiggyBank, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
 
@@ -8,6 +8,7 @@ import { Revenue, Expense, Debt, Caixinha, MONTH_NAMES } from './finances/types'
 import { MonthSelector } from './finances/MonthSelector';
 import { FluxoMensalTab } from './finances/FluxoMensalTab';
 import { VisaoAnualTab } from './finances/VisaoAnualTab';
+import { VisaoTabelaTab } from './finances/VisaoTabelaTab';
 import { CaixinhasTab } from './finances/CaixinhasTab';
 import { ParcelamentosTab } from './finances/ParcelamentosTab';
 import { TransactionModal, TransactionFormData, EditScope, TransactionType } from './finances/TransactionModal';
@@ -32,8 +33,9 @@ interface FinancesProps {
 
 export const Finances = ({ session }: FinancesProps) => {
   const [activeSubTab, setActiveSubTab] = useState('fluxo');
-  const [fluxoViewMode, setFluxoViewMode] = useState<'mensal' | 'anual'>('mensal');
+  const [fluxoViewMode, setFluxoViewMode] = useState<'mensal' | 'anual' | 'tabela'>('mensal');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -177,25 +179,37 @@ export const Finances = ({ session }: FinancesProps) => {
       if (isNew) {
         let toAdd: any[] = [];
         if (data.recurrenceType === 'unique') {
-          toAdd.push({ ...data, id: `${data.type}-${Date.now()}`, groupId, active: true });
+          toAdd.push({ ...data, id: `${data.type}-${Date.now()}`, year: selectedYear, groupId, active: true });
         } else if (data.recurrenceType === 'fixed') {
-          // Fixed monthly: repeat for the next 12 months in the year context
-          toAdd = Array.from({ length: 12 - data.month }, (_, i) => ({
-            ...data,
-            id: `${data.type}-${Date.now()}-${i}`,
-            month: data.month + i,
-            groupId,
-            active: true
-          }));
+          // Fixed monthly: repeat for the next 5 years (60 months)
+          toAdd = Array.from({ length: 60 }, (_, i) => {
+            const currentTotalMonths = selectedYear * 12 + data.month + i;
+            const y = Math.floor(currentTotalMonths / 12);
+            const m = currentTotalMonths % 12;
+            return {
+              ...data,
+              id: `${data.type}-${Date.now()}-${i}`,
+              month: m,
+              year: y,
+              groupId,
+              active: true
+            };
+          });
         } else if (data.recurrenceType === 'installments' && data.installmentsCount) {
-          toAdd = Array.from({ length: Math.min(data.installmentsCount, 12 - data.month) }, (_, i) => ({
-            ...data,
-            id: `${data.type}-${Date.now()}-${i}`,
-            month: data.month + i,
-            groupId,
-            installmentIndex: i + 1,
-            active: true
-          }));
+          toAdd = Array.from({ length: data.installmentsCount }, (_, i) => {
+            const currentTotalMonths = selectedYear * 12 + data.month + i;
+            const y = Math.floor(currentTotalMonths / 12);
+            const m = currentTotalMonths % 12;
+            return {
+              ...data,
+              id: `${data.type}-${Date.now()}-${i}`,
+              month: m,
+              year: y,
+              groupId,
+              installmentIndex: i + 1,
+              active: true
+            };
+          });
         }
         return [...list, ...toAdd];
       } else {
@@ -203,15 +217,20 @@ export const Finances = ({ session }: FinancesProps) => {
         return list.map(item => {
           if (editScope === 'single') {
             if (item.id === itemToEdit.id) {
-              return { ...item, description: data.description, value: data.value, category: data.category, recurrenceType: data.recurrenceType, installmentsCount: data.installmentsCount, active: data.active };
+              return { ...item, description: data.description, value: data.value, category: data.category, recurrenceType: data.recurrenceType, installmentsCount: data.installmentsCount, active: data.active, isLimit: data.isLimit };
             }
           } else if (editScope === 'future') {
-            if (item.groupId === itemToEdit.groupId && item.month >= itemToEdit.month) {
-              return { ...item, description: data.description, value: data.value, category: data.category, recurrenceType: data.recurrenceType, installmentsCount: data.installmentsCount, active: data.active };
+            const itemY = item.year !== undefined ? item.year : new Date().getFullYear();
+            const editY = itemToEdit.year !== undefined ? itemToEdit.year : new Date().getFullYear();
+            const itemTotalMonths = itemY * 12 + item.month;
+            const editTotalMonths = editY * 12 + itemToEdit.month;
+            
+            if (item.groupId === itemToEdit.groupId && itemTotalMonths >= editTotalMonths) {
+              return { ...item, description: data.description, value: data.value, category: data.category, recurrenceType: data.recurrenceType, installmentsCount: data.installmentsCount, active: data.active, isLimit: data.isLimit };
             }
           } else if (editScope === 'all') {
             if (item.groupId === itemToEdit.groupId) {
-              return { ...item, description: data.description, value: data.value, category: data.category, recurrenceType: data.recurrenceType, installmentsCount: data.installmentsCount, active: data.active };
+              return { ...item, description: data.description, value: data.value, category: data.category, recurrenceType: data.recurrenceType, installmentsCount: data.installmentsCount, active: data.active, isLimit: data.isLimit };
             }
           }
           return item;
@@ -235,7 +254,11 @@ export const Finances = ({ session }: FinancesProps) => {
       if (deleteScope === 'single') {
         return item.id !== id;
       } else if (deleteScope === 'future') {
-        if (item.groupId === itemToDelete.groupId && item.month >= itemToDelete.month) return false;
+        const itemY = item.year !== undefined ? item.year : new Date().getFullYear();
+        const delY = itemToDelete.year !== undefined ? itemToDelete.year : new Date().getFullYear();
+        const itemTotalMonths = itemY * 12 + item.month;
+        const delTotalMonths = delY * 12 + itemToDelete.month;
+        if (item.groupId === itemToDelete.groupId && itemTotalMonths >= delTotalMonths) return false;
         return true;
       } else if (deleteScope === 'all') {
         return item.groupId !== itemToDelete.groupId;
@@ -247,32 +270,50 @@ export const Finances = ({ session }: FinancesProps) => {
     else syncExpenses(newList);
   };
 
-  // Live statistical parser over the full 12 months
+  // Live statistical parser over the full 12 months for the selectedYear
   const getMonthTotals = (monthIdx: number) => {
-    const monthRevs = revenues.filter(r => r.month === monthIdx);
-    const monthExps = expenses.filter(e => e.month === monthIdx);
+    const monthRevs = revenues.filter(r => r.month === monthIdx && (r.year === undefined || r.year === selectedYear));
+    const monthExps = expenses.filter(e => e.month === monthIdx && (e.year === undefined || e.year === selectedYear));
 
     const totalRevs = monthRevs.reduce((acc, r) => acc + (r.active !== false ? r.value : 0), 0);
     const totalExps = monthExps.reduce((acc, e) => acc + (e.active !== false ? e.value : 0), 0);
 
-    const currentYear = new Date().getFullYear();
-
     const totalCaixas = caixinhas
       .filter(c => {
         if (c.status !== 'Ativo') return false;
-        if (c.startYear !== undefined && c.startMonth !== undefined) {
-          if (currentYear < c.startYear) return false;
-          if (currentYear === c.startYear && monthIdx < c.startMonth) return false;
+        
+        const startY = c.startYear !== undefined ? c.startYear : new Date().getFullYear();
+        const startM = c.startMonth !== undefined ? c.startMonth : new Date().getMonth();
+        
+        const startTotalMonths = startY * 12 + startM;
+        const currentTotalMonths = selectedYear * 12 + monthIdx;
+        
+        // Don't deduct if we are before the start date
+        if (currentTotalMonths < startTotalMonths) return false;
+
+        // Stop deducting if the target is already reached (roughly estimated by months passed)
+        if (c.targetValue && c.monthlyPlanned > 0) {
+            const monthsPassed = currentTotalMonths - startTotalMonths;
+            const projectedValue = c.currentValue + (monthsPassed * c.monthlyPlanned);
+            // If the projected value from past months already hit the target, stop deducting this month
+            if (projectedValue - c.monthlyPlanned >= c.targetValue) {
+               return false;
+            }
         }
-        return !c.deposits?.some(d => d.month === monthIdx && d.year === currentYear && d.skipped);
+
+        return !c.deposits?.some(d => d.month === monthIdx && d.year === selectedYear && d.skipped);
       })
       .reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
 
     const installments = debts.filter(d => {
       if (d.status !== 'Ativo') return false;
-      const start = Number(d.startMonth);
-      const end = start + Number(d.installmentsCount);
-      return monthIdx >= start && monthIdx < end;
+      const startM = Number(d.startMonth);
+      const startY = d.startYear !== undefined ? d.startYear : new Date().getFullYear();
+      
+      const startTotalMonths = startY * 12 + startM;
+      const currentTotalMonths = selectedYear * 12 + monthIdx;
+      
+      return currentTotalMonths >= startTotalMonths && currentTotalMonths < startTotalMonths + Number(d.installmentsCount);
     });
     const totalParc = installments.reduce((acc, d) => acc + (d.installmentValue || 0), 0);
 
@@ -352,25 +393,52 @@ export const Finances = ({ session }: FinancesProps) => {
         {/* Render View Mode Toggle and MonthSelector ONLY if the active tab is fluxo */}
         {activeSubTab === 'fluxo' && (
           <div className="mb-6 flex flex-col gap-5">
-            <div className="flex bg-slate-100/80 p-1.5 rounded-2xl w-fit mx-auto border border-slate-200/50">
-              <button 
-                onClick={() => setFluxoViewMode('mensal')} 
-                className={`h-10 px-6 text-xs sm:text-sm font-bold rounded-xl transition-all ${fluxoViewMode === 'mensal' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Mensal
-              </button>
-              <button 
-                onClick={() => setFluxoViewMode('anual')} 
-                className={`h-10 px-6 text-xs sm:text-sm font-bold rounded-xl transition-all ${fluxoViewMode === 'anual' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Anual
-              </button>
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex bg-slate-100/80 p-1.5 rounded-2xl w-fit border border-slate-200/50">
+                <button 
+                  onClick={() => setFluxoViewMode('mensal')} 
+                  className={`h-10 px-6 text-xs sm:text-sm font-bold rounded-xl transition-all ${fluxoViewMode === 'mensal' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Mensal
+                </button>
+                <button 
+                  onClick={() => setFluxoViewMode('anual')} 
+                  className={`h-10 px-6 text-xs sm:text-sm font-bold rounded-xl transition-all ${fluxoViewMode === 'anual' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Anual
+                </button>
+                <button 
+                  onClick={() => setFluxoViewMode('tabela')} 
+                  className={`h-10 px-6 text-xs sm:text-sm font-bold rounded-xl transition-all ${fluxoViewMode === 'tabela' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Tabela
+                </button>
+              </div>
+
+              {/* Year Selector - Global (afeta todas as views) */}
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-gray-200 shadow-xs">
+                <button
+                  onClick={() => setSelectedYear(selectedYear - 1)}
+                  className="p-1 rounded hover:bg-gray-100 text-gray-500 active:scale-95 transition-transform cursor-pointer"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-sm font-black text-gray-700 min-w-[36px] text-center">{selectedYear}</span>
+                <button
+                  onClick={() => setSelectedYear(selectedYear + 1)}
+                  className="p-1 rounded hover:bg-gray-100 text-gray-500 active:scale-95 transition-transform cursor-pointer"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
             
             {fluxoViewMode === 'mensal' && (
-              <MonthSelector
-                selectedMonth={selectedMonth}
+              <MonthSelector 
+                selectedMonth={selectedMonth} 
                 setSelectedMonth={setSelectedMonth}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
                 monthlySobraList={monthlySobraArray}
               />
             )}
@@ -389,6 +457,7 @@ export const Finances = ({ session }: FinancesProps) => {
             {activeSubTab === 'fluxo' && fluxoViewMode === 'mensal' && (
               <FluxoMensalTab
                 selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
                 revenues={revenues}
                 expenses={expenses}
                 debts={debts}
@@ -405,6 +474,17 @@ export const Finances = ({ session }: FinancesProps) => {
               <VisaoAnualTab
                 allMonthsData={allMonthsCompiled}
                 onFocusMonth={handleFocusMonth}
+              />
+            )}
+
+            {/* 2b. VISÃO TABELA MATRICIAL */}
+            {activeSubTab === 'fluxo' && fluxoViewMode === 'tabela' && (
+              <VisaoTabelaTab
+                selectedYear={selectedYear}
+                revenues={revenues}
+                expenses={expenses}
+                debts={debts}
+                caixinhas={caixinhas}
               />
             )}
 

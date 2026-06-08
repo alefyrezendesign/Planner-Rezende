@@ -10,6 +10,7 @@ import { EditScope, TransactionType } from './TransactionModal';
 
 interface FluxoMensalTabProps {
   selectedMonth: number;
+  selectedYear: number;
   revenues: Revenue[];
   expenses: Expense[];
   debts: Debt[];
@@ -22,6 +23,7 @@ interface FluxoMensalTabProps {
 
 export const FluxoMensalTab = ({
   selectedMonth,
+  selectedYear,
   revenues,
   expenses,
   debts,
@@ -40,44 +42,57 @@ export const FluxoMensalTab = ({
   const [deleteScope, setDeleteScope] = useState<EditScope>('single');
 
   // Month-specific stats
-  const monthRevenues = revenues.filter(r => r.month === selectedMonth);
-  const monthExpenses = expenses.filter(e => e.month === selectedMonth);
+  const monthRevenues = revenues.filter(r => r.month === selectedMonth && (r.year === undefined || r.year === selectedYear));
+  const monthExpenses = expenses.filter(e => e.month === selectedMonth && (e.year === undefined || e.year === selectedYear));
 
   const totalRevenues = monthRevenues.reduce((acc, r) => acc + (r.active !== false ? r.value : 0), 0);
   const totalExpenses = monthExpenses.reduce((acc, e) => acc + (e.active !== false ? e.value : 0), 0);
 
-  const currentYear = new Date().getFullYear();
-
   const totalCaixinhas = caixinhas
     .filter(c => {
       if (c.status !== 'Ativo') return false;
-      if (c.startYear !== undefined && c.startMonth !== undefined) {
-        if (currentYear < c.startYear) return false;
-        if (currentYear === c.startYear && selectedMonth < c.startMonth) return false;
+      const startY = c.startYear !== undefined ? c.startYear : new Date().getFullYear();
+      const startM = c.startMonth !== undefined ? c.startMonth : new Date().getMonth();
+      const startTotalMonths = startY * 12 + startM;
+      const currentTotalMonths = selectedYear * 12 + selectedMonth;
+      if (currentTotalMonths < startTotalMonths) return false;
+
+      if (c.targetValue && c.monthlyPlanned > 0) {
+          const monthsPassed = currentTotalMonths - startTotalMonths;
+          const projectedValue = c.currentValue + (monthsPassed * c.monthlyPlanned);
+          if (projectedValue - c.monthlyPlanned >= c.targetValue) {
+             return false;
+          }
       }
-      return !c.deposits?.some(d => d.month === selectedMonth && d.year === currentYear && d.skipped);
+
+      return !c.deposits?.some(d => d.month === selectedMonth && d.year === selectedYear && d.skipped);
     })
     .reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
 
   const monthInstallments = debts.filter(d => {
     if (d.status !== 'Ativo') return false;
-    const start = Number(d.startMonth);
-    const end = start + Number(d.installmentsCount);
-    return selectedMonth >= start && selectedMonth < end;
+    const startM = Number(d.startMonth);
+    const startY = d.startYear !== undefined ? d.startYear : new Date().getFullYear();
+    const startTotalMonths = startY * 12 + startM;
+    const currentTotalMonths = selectedYear * 12 + selectedMonth;
+    return currentTotalMonths >= startTotalMonths && currentTotalMonths < startTotalMonths + Number(d.installmentsCount);
   });
+  
   const totalInstallments = monthInstallments.reduce((acc, d) => acc + (d.installmentValue || 0), 0);
 
   const totalOutflows = totalExpenses + totalCaixinhas + totalInstallments;
   const saldoLivre = totalRevenues - totalOutflows;
 
   // Search execution
-  const filteredRevenues = monthRevenues.filter(r => {
-    return r.description.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredRevenues = monthRevenues.filter(r => 
+    (selectedCategory === 'Todas' || r.category === selectedCategory) &&
+    r.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  const filteredExpenses = monthExpenses.filter(e => {
-    return e.description.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredExpenses = monthExpenses.filter(e => 
+    (selectedCategory === 'Todas' || e.category === selectedCategory) &&
+    e.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const cleanEmojis = (text: string) => {
     return text.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
@@ -299,6 +314,7 @@ export const FluxoMensalTab = ({
                       <p className="text-xs font-bold text-gray-800 truncate leading-snug flex items-center gap-2">
                         {cleanEmojis(exp.description)}
                         {exp.active === false && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 uppercase tracking-wider">Pausado</span>}
+                        {exp.isLimit && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 uppercase tracking-widest border border-indigo-200 shadow-xs">Limite</span>}
                       </p>
                       {exp.recurrenceType === 'fixed' && <span className="text-[10px] text-gray-400 font-medium">Recorrente Mensal</span>}
                       {exp.recurrenceType === 'installments' && <span className="text-[10px] text-gray-400 font-medium">Parcela {exp.installmentIndex}/{exp.installmentsCount}</span>}
@@ -354,13 +370,20 @@ export const FluxoMensalTab = ({
             <div className="space-y-1.5 mt-4 max-h-[140px] overflow-y-auto pr-1">
               {caixinhas.filter(c => {
                 if (c.status !== 'Ativo') return false;
-                if (c.startYear !== undefined && c.startMonth !== undefined) {
-                  if (currentYear < c.startYear) return false;
-                  if (currentYear === c.startYear && selectedMonth < c.startMonth) return false;
+                const startY = c.startYear !== undefined ? c.startYear : new Date().getFullYear();
+                const startM = c.startMonth !== undefined ? c.startMonth : new Date().getMonth();
+                const startTotal = startY * 12 + startM;
+                const currentTotal = selectedYear * 12 + selectedMonth;
+                if (currentTotal < startTotal) return false;
+                
+                if (c.targetValue && c.monthlyPlanned > 0) {
+                    const monthsPassed = currentTotal - startTotal;
+                    const projectedValue = c.currentValue + (monthsPassed * c.monthlyPlanned);
+                    if (projectedValue - c.monthlyPlanned >= c.targetValue) return false;
                 }
                 return true;
               }).map(c => {
-                const isSkipped = c.deposits?.some(d => d.month === selectedMonth && d.year === currentYear && d.skipped);
+                const isSkipped = c.deposits?.some(d => d.month === selectedMonth && d.year === selectedYear && d.skipped);
                 return (
                 <div key={c.id} className="flex flex-col py-2 border-b border-gray-50 last:border-0 group">
                   <div className={`flex justify-between items-center transition-all ${isSkipped ? 'opacity-40 grayscale' : ''}`}>
@@ -372,7 +395,7 @@ export const FluxoMensalTab = ({
                   </div>
                   <div className="mt-1 flex justify-end">
                     <button
-                      onClick={() => onToggleSkipCaixinha(c.id, selectedMonth, currentYear)}
+                      onClick={() => onToggleSkipCaixinha(c.id, selectedMonth, selectedYear)}
                       className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-500 transition-colors"
                     >
                       {isSkipped ? 'Desfazer Pulo' : 'Pular este mês'}
@@ -382,9 +405,16 @@ export const FluxoMensalTab = ({
               )})}
               {caixinhas.filter(c => {
                 if (c.status !== 'Ativo') return false;
-                if (c.startYear !== undefined && c.startMonth !== undefined) {
-                  if (currentYear < c.startYear) return false;
-                  if (currentYear === c.startYear && selectedMonth < c.startMonth) return false;
+                const startY = c.startYear !== undefined ? c.startYear : new Date().getFullYear();
+                const startM = c.startMonth !== undefined ? c.startMonth : new Date().getMonth();
+                const startTotal = startY * 12 + startM;
+                const currentTotal = selectedYear * 12 + selectedMonth;
+                if (currentTotal < startTotal) return false;
+                
+                if (c.targetValue && c.monthlyPlanned > 0) {
+                    const monthsPassed = currentTotal - startTotal;
+                    const projectedValue = c.currentValue + (monthsPassed * c.monthlyPlanned);
+                    if (projectedValue - c.monthlyPlanned >= c.targetValue) return false;
                 }
                 return true;
               }).length === 0 && (
@@ -406,7 +436,11 @@ export const FluxoMensalTab = ({
             </p>
             <div className="space-y-1.5 mt-4 max-h-[140px] overflow-y-auto pr-1">
               {monthInstallments.map((d) => {
-                const relativeIndex = selectedMonth - Number(d.startMonth) + 1;
+                const startY = d.startYear !== undefined ? d.startYear : new Date().getFullYear();
+                const startM = Number(d.startMonth);
+                const startTotal = startY * 12 + startM;
+                const currentTotal = selectedYear * 12 + selectedMonth;
+                const relativeIndex = currentTotal - startTotal + 1;
                 return (
                   <div key={d.id} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                     <div className="flex items-center gap-2 min-w-0 pr-2">

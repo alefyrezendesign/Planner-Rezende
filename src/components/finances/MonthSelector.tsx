@@ -6,12 +6,16 @@ import { formatCurrency } from '../../utils';
 interface MonthSelectorProps {
   selectedMonth: number;
   setSelectedMonth: (month: number) => void;
+  selectedYear: number;
+  setSelectedYear: (year: number) => void;
   monthlySobraList: number[];
 }
 
 export const MonthSelector = ({
   selectedMonth,
   setSelectedMonth,
+  selectedYear,
+  setSelectedYear,
   monthlySobraList,
 }: MonthSelectorProps) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -30,36 +34,70 @@ export const MonthSelector = ({
   }, [selectedMonth]);
 
   const handlePrev = () => {
-    setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1);
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
   };
 
   const handleNext = () => {
-    setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1);
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
   };
+
+  const handlePrevYear = () => setSelectedYear(selectedYear - 1);
+  const handleNextYear = () => setSelectedYear(selectedYear + 1);
 
   return (
     <div className="bg-slate-50 border border-slate-200/60 p-3 rounded-2xl space-y-2.5">
       {/* Month Header and Quick selector control */}
-      <div className="flex items-center justify-between px-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 gap-3">
         <div className="flex items-center gap-1.5 text-gray-800 font-bold text-sm">
           <Calendar size={16} className="text-blue-600 shrink-0" />
           <span>Focado em: <span className="text-blue-600 font-extrabold">{MONTH_NAMES[selectedMonth]}</span></span>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={handlePrev}
-            className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
-            title="Mês Anterior"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={handleNext}
-            className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
-            title="Próximo Mês"
-          >
-            <ChevronRight size={16} />
-          </button>
+        
+        <div className="flex items-center gap-4">
+          {/* Year Selector */}
+          <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-gray-200 shadow-xs">
+            <button
+              onClick={handlePrevYear}
+              className="p-1 rounded hover:bg-gray-100 text-gray-500 active:scale-95 transition-transform"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="text-sm font-black text-gray-700 min-w-[36px] text-center">{selectedYear}</span>
+            <button
+              onClick={handleNextYear}
+              className="p-1 rounded hover:bg-gray-100 text-gray-500 active:scale-95 transition-transform"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+
+          {/* Month Selector */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handlePrev}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
+              title="Mês Anterior"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={handleNext}
+              className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
+              title="Próximo Mês"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
 
