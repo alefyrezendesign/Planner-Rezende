@@ -63,41 +63,21 @@ export const MonthSelector = ({
           <span>Focado em: <span className="text-blue-600 font-extrabold">{MONTH_NAMES[selectedMonth]}</span></span>
         </div>
         
-        <div className="flex items-center gap-4">
-          {/* Year Selector */}
-          <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-gray-200 shadow-xs">
-            <button
-              onClick={handlePrevYear}
-              className="p-1 rounded hover:bg-gray-100 text-gray-500 active:scale-95 transition-transform"
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span className="text-sm font-black text-gray-700 min-w-[36px] text-center">{selectedYear}</span>
-            <button
-              onClick={handleNextYear}
-              className="p-1 rounded hover:bg-gray-100 text-gray-500 active:scale-95 transition-transform"
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-
-          {/* Month Selector */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handlePrev}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
-              title="Mês Anterior"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={handleNext}
-              className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
-              title="Próximo Mês"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handlePrev}
+            className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
+            title="Mês Anterior"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={handleNext}
+            className="p-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 active:scale-95 transition-transform"
+            title="Próximo Mês"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
