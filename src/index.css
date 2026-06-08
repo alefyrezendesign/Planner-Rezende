@@ -31,11 +31,30 @@
   .glass-panel {
     @apply bg-white/60 backdrop-blur-xl border border-white/50 shadow-[0_4px_24px_rgb(0,0,0,0.02)] rounded-3xl;
   }
+  .glass-card-premium {
+    @apply bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.03)] rounded-[24px] hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(0,0,0,0.05)] transition-all duration-300 ease-out;
+  }
+  .animate-mesh {
+    animation: meshFlow 15s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes meshFlow {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 100%; }
 }
 
 body {
   @apply bg-slate-50 text-slate-800 antialiased font-sans flex flex-col min-h-screen text-base selection:bg-primary-100 selection:text-primary-900;
-  background-image: radial-gradient(circle at top center, #e0f0fe 0%, transparent 50%), radial-gradient(circle at bottom left, #f0f7ff 0%, transparent 40%);
+  
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(201,100%,94%,1) 0, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(210,100%,96%,1) 0, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(201,100%,96%,1) 0, transparent 50%);
+  background-size: 200% 200%;
+  animation: meshFlow 20s ease-in-out infinite alternate;
   background-attachment: fixed;
 }
-
