@@ -339,7 +339,7 @@ export const Finances = ({ session }: FinancesProps) => {
       </div>
 
       {/* Main Interactive Workboard */}
-      <div className="glass-card p-4 sm:p-6 min-h-[480px]">
+      <div className="glass-card-premium p-4 sm:p-6 min-h-[480px]">
         {/* Render View Mode Toggle and MonthSelector ONLY if the active tab is fluxo */}
         {activeSubTab === 'fluxo' && (
           <div className="mb-6 flex flex-col gap-5">

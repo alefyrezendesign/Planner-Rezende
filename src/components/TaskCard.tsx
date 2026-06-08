@@ -367,15 +367,16 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
       layout={!isOverlay}
       initial={isOverlay ? undefined : { opacity: 0, y: 10 }}
       animate={isOverlay ? undefined : { opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
       onClick={() => !isOverlay && onDetailClick(task)}
-      className={`glass-card mb-4 transition-all duration-300 ${isStatusMenuOpen ? 'relative z-50' : 'relative z-10'} ${
+      className={`glass-card-premium mb-4 transition-all duration-300 ${isStatusMenuOpen ? 'relative z-50' : 'relative z-10'} ${
         isOverlay
           ? "ring-2 ring-primary-500 shadow-2xl pointer-events-none scale-[1.02]"
           : task.status === "Concluído"
-          ? "bg-green-50/40 border-green-200/60 cursor-pointer hover:shadow-lg"
+          ? "bg-green-50/40 border-green-200/60 cursor-pointer"
           : task.status === "Pendente"
-          ? "bg-orange-50/30 border-orange-200/60 cursor-pointer hover:shadow-lg"
-          : "cursor-pointer hover:shadow-lg hover:-translate-y-0.5"
+          ? "bg-orange-50/30 border-orange-200/60 cursor-pointer"
+          : "cursor-pointer"
       }`}
     >
       {/* Optional Card Cover Image */}

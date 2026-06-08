@@ -46,7 +46,7 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
   const generalProgress = totalItems > 0 ? Math.round((totalCompletedItems / totalItems) * 100) : 0;
 
   return (
-    <div className="bg-white rounded-[20px] border border-gray-200 shadow-sm mb-6 sm:mb-8 overflow-hidden transition-all duration-300">
+    <div className="glass-card-premium mb-6 sm:mb-8 overflow-hidden">
       <div className="p-4 sm:p-5">
         
         {/* Header / Progresso Geral */}
