@@ -1,0 +1,6 @@
+{
+  "name": "Replanner",
+  "description": "Replanner - Metas financeiras, simulação de carros e imóveis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

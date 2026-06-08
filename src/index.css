@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-primary-50: #f0f7ff;
+  --color-primary-100: #e0f0fe;
+  --color-primary-200: #b9dffd;
+  --color-primary-300: #7cc3fc;
+  --color-primary-400: #38a5f8;
+  --color-primary-500: #0e8af0;
+  --color-primary-600: #026ccf;
+  --color-primary-700: #0356a6;
+  --color-primary-800: #07498a;
+  --color-primary-900: #0c3e72;
+}
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl;
+  }
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-xl border border-white/50 shadow-[0_4px_24px_rgb(0,0,0,0.02)] rounded-3xl;
+  }
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased font-sans flex flex-col min-h-screen text-base selection:bg-primary-100 selection:text-primary-900;
+  background-image: radial-gradient(circle at top center, #e0f0fe 0%, transparent 50%), radial-gradient(circle at bottom left, #f0f7ff 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
