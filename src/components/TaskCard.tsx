@@ -88,11 +88,17 @@ function SortableSubtaskItem({ subtask, onToggle, renderSubtaskDueDate }: Sortab
           )}
         </div>
         <div className="flex-1 flex flex-col gap-1 items-start">
-          <span
-            className={`text-sm md:text-base ${subtask.completed ? "text-gray-400 line-through" : "text-gray-700"}`}
+          <motion.span
+            animate={{ 
+              color: subtask.completed ? "#9ca3af" : "#374151",
+              textDecoration: subtask.completed ? "line-through" : "none",
+              opacity: subtask.completed ? 0.7 : 1
+            }}
+            transition={{ duration: 0.3 }}
+            className="text-sm md:text-base"
           >
             {subtask.title}
-          </span>
+          </motion.span>
           {renderSubtaskDueDate(subtask.dueDate, subtask.completed)}
         </div>
       </button>
@@ -458,11 +464,17 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
               </div>
             </div>
             
-            <h3
-              className={`text-lg font-semibold mb-1 ${task.status === "Concluído" ? "text-gray-500 line-through" : "text-gray-900"}`}
+            <motion.h3
+              animate={{ 
+                color: task.status === "Concluído" ? "#6b7280" : "#111827",
+                textDecoration: task.status === "Concluído" ? "line-through" : "none",
+                opacity: task.status === "Concluído" ? 0.7 : 1
+              }}
+              transition={{ duration: 0.3 }}
+              className="text-lg font-semibold mb-1"
             >
               {task.title}
-            </h3>
+            </motion.h3>
 
             {/* Compact Description summary */}
             {task.description && (

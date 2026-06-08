@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AnimatedNumber } from '../AnimatedNumber';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   PiggyBank, Search, Plus, Trash2, X, ArrowUpRight, ArrowDownRight, WalletCards, Edit2
@@ -107,7 +108,7 @@ export const FluxoMensalTab = ({
             <div className="mt-4">
               <p className="text-xs text-gray-500 font-bold mb-0.5">Saldo livre projetado</p>
               <h3 className={`text-4xl font-black tracking-tight leading-none ${saldoLivre >= 0 ? 'text-gray-900' : 'text-rose-600'}`}>
-                {formatCurrency(saldoLivre)}
+                <AnimatedNumber value={saldoLivre} format={formatCurrency} />
               </h3>
             </div>
           </div>
