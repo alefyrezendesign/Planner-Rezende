@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Task } from '../types';
 import { ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
+import { motion } from "motion/react";
 
 interface DashboardStatsProps {
   tasks: Task[];
@@ -82,7 +83,12 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
 
         {/* Barra de Progresso Geral */}
         <div className="w-full bg-slate-100 rounded-full h-2 mt-4 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-green-500 h-full rounded-full transition-all duration-700" style={{ width: `${generalProgress}%` }}></div>
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${generalProgress}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            className="bg-linear-to-r from-blue-600 to-green-500 h-full rounded-full" 
+          />
         </div>
 
         {/* Breakdown Grid detailed views - Animated Accordion */}

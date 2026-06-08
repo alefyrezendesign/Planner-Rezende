@@ -49,7 +49,14 @@ export const FluxoMensalTab = ({
   const currentYear = new Date().getFullYear();
 
   const totalCaixinhas = caixinhas
-    .filter(c => c.status === 'Ativo' && !c.deposits?.some(d => d.month === selectedMonth && d.year === currentYear && d.skipped))
+    .filter(c => {
+      if (c.status !== 'Ativo') return false;
+      if (c.startYear !== undefined && c.startMonth !== undefined) {
+        if (currentYear < c.startYear) return false;
+        if (currentYear === c.startYear && selectedMonth < c.startMonth) return false;
+      }
+      return !c.deposits?.some(d => d.month === selectedMonth && d.year === currentYear && d.skipped);
+    })
     .reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
 
   const monthInstallments = debts.filter(d => {
@@ -108,7 +115,7 @@ export const FluxoMensalTab = ({
             <div className="mt-4">
               <p className="text-xs text-gray-500 font-bold mb-0.5">Saldo livre projetado</p>
               <h3 className={`text-4xl font-black tracking-tight leading-none ${saldoLivre >= 0 ? 'text-gray-900' : 'text-rose-600'}`}>
-                <AnimatedNumber value={saldoLivre} format={formatCurrency} />
+                {formatCurrency(saldoLivre)}
               </h3>
             </div>
           </div>
@@ -120,14 +127,16 @@ export const FluxoMensalTab = ({
               <span className="font-black text-base text-gray-800">{spentPercentage}% do caixa</span>
             </div>
             <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden shrink-0 mt-1">
-              <div 
-                className={`h-full rounded-full transition-all ${
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, spentPercentage)}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className={`h-full rounded-full ${
                   spentPercentage < 50 ? 'bg-emerald-500' :
                   spentPercentage < 75 ? 'bg-blue-500' :
                   spentPercentage < 90 ? 'bg-amber-400' :
                   'bg-rose-500'
                 }`}
-                style={{ width: `${Math.min(100, spentPercentage)}%` }}
               />
             </div>
           </div>
@@ -343,7 +352,14 @@ export const FluxoMensalTab = ({
               <PiggyBank size={16} className="text-blue-500" /> Caixinhas
             </p>
             <div className="space-y-1.5 mt-4 max-h-[140px] overflow-y-auto pr-1">
-              {caixinhas.filter(c => c.status === 'Ativo').map(c => {
+              {caixinhas.filter(c => {
+                if (c.status !== 'Ativo') return false;
+                if (c.startYear !== undefined && c.startMonth !== undefined) {
+                  if (currentYear < c.startYear) return false;
+                  if (currentYear === c.startYear && selectedMonth < c.startMonth) return false;
+                }
+                return true;
+              }).map(c => {
                 const isSkipped = c.deposits?.some(d => d.month === selectedMonth && d.year === currentYear && d.skipped);
                 return (
                 <div key={c.id} className="flex flex-col py-2 border-b border-gray-50 last:border-0 group">
@@ -364,7 +380,14 @@ export const FluxoMensalTab = ({
                   </div>
                 </div>
               )})}
-              {caixinhas.filter(c => c.status === 'Ativo').length === 0 && (
+              {caixinhas.filter(c => {
+                if (c.status !== 'Ativo') return false;
+                if (c.startYear !== undefined && c.startMonth !== undefined) {
+                  if (currentYear < c.startYear) return false;
+                  if (currentYear === c.startYear && selectedMonth < c.startMonth) return false;
+                }
+                return true;
+              }).length === 0 && (
                 <p className="text-gray-400 font-medium py-4 text-center border-2 border-dashed border-gray-100 rounded-xl">Nenhum aporte este mês</p>
               )}
             </div>

@@ -46,6 +46,8 @@ export interface Caixinha {
   calculationMode?: 'monthly' | 'duration';
   durationMonths?: number;
   deposits?: CaixinhaDeposit[];
+  startMonth?: number;
+  startYear?: number;
 }
 
 export interface Debt {

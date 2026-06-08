@@ -43,6 +43,7 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
+  rectSortingStrategy,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Auth } from "./components/Auth";
@@ -759,7 +760,7 @@ export default function App() {
                 onDeleteHouse={onDeleteHouseData}
               />
             ) : (
-              <>
+              <div className="space-y-8 max-w-5xl mx-auto">
                 <DashboardStats tasks={tasks} />
                 
                 {/* Advanced Inline Mobile Filters */}
@@ -934,7 +935,7 @@ export default function App() {
                 </div>
 
                 {/* Tasks View */}
-                <div className="max-w-3xl">
+                <div className="w-full">
                   <AnimatePresence mode="popLayout">
                     {filteredTasks.length === 0 ? (
                       <motion.div
@@ -1057,7 +1058,7 @@ export default function App() {
                     )}
                   </AnimatePresence>
                 </div>
-              </>
+              </div>
             )}
           </motion.div>
         </AnimatePresence>

@@ -47,7 +47,7 @@ export const DepositModal = ({ isOpen, onClose, onSave, suggestedValue, mode }: 
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -59,10 +59,11 @@ export const DepositModal = ({ isOpen, onClose, onSave, suggestedValue, mode }: 
 
         {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-sm bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col"
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 100 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="relative w-full sm:max-w-sm bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col pb-[env(safe-area-inset-bottom)]"
         >
           <div className={`px-6 py-4 flex items-center justify-between border-b border-gray-100 ${isSkip ? 'bg-orange-50/50' : 'bg-emerald-50/50'}`}>
             <h3 className={`text-lg font-black ${isSkip ? 'text-orange-900' : 'text-emerald-900'}`}>
@@ -81,7 +82,7 @@ export const DepositModal = ({ isOpen, onClose, onSave, suggestedValue, mode }: 
           <div className="p-6">
             <form id="deposit-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <Calendar size={14} /> Mês Referência
                 </label>
                 <div className="flex gap-2">

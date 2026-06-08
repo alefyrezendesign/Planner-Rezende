@@ -203,7 +203,7 @@ export function TaskDetailModal({
                     href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-4 bg-primary-50/50 hover:bg-primary-50 border border-primary-100/50 rounded-xl text-primary-700 text-sm font-semibold transition-all hover:scale-[1.01] group shadow-sm"
+                    className="flex items-center justify-between p-4 bg-primary-50/50 hover:bg-primary-50 border border-primary-100/50 rounded-xl text-primary-700 text-sm font-semibold transition-all group"
                   >
                     <span className="truncate pr-4 flex items-center gap-2">
                       <LinkIcon size={16} className="text-primary-400 shrink-0" />

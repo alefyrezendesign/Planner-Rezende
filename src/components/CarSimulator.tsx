@@ -209,7 +209,7 @@ export function CarSimulator({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="glass-card overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
+                className="glass-card overflow-hidden transition-all duration-300"
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Image Section */}
@@ -379,12 +379,12 @@ export function CarSimulator({
                                 </span>
                               </div>
                               <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-500 ${downPaymentProgress >= 100 ? "bg-emerald-500" : "bg-blue-500"}`}
-                                  style={{
-                                    width: `${Math.min(100, downPaymentProgress)}%`,
-                                  }}
-                                ></div>
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min(100, downPaymentProgress)}%` }}
+                                  transition={{ duration: 1, ease: "easeOut" }}
+                                  className={`h-full rounded-full ${downPaymentProgress >= 100 ? "bg-emerald-500" : "bg-blue-500"}`}
+                                />
                               </div>
                             </div>
                           )}

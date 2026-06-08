@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Calculator, Target, Calendar } from 'lucide-react';
-import { Caixinha } from './types';
+import { Caixinha, MONTH_NAMES } from './types';
 import { formatCurrency } from '../../utils';
 
 interface CaixinhaModalProps {
@@ -20,6 +20,10 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
   const [calcMode, setCalcMode] = useState<'monthly' | 'duration'>('monthly');
   const [monthlyPlanned, setMonthlyPlanned] = useState<number | ''>('');
   const [durationMonths, setDurationMonths] = useState<number | ''>('');
+  
+  const currentDate = new Date();
+  const [startMonth, setStartMonth] = useState<number>(currentDate.getMonth());
+  const [startYear, setStartYear] = useState<number>(currentDate.getFullYear());
 
   useEffect(() => {
     if (isOpen) {
@@ -31,6 +35,8 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
         setCalcMode(initialData.calculationMode || 'monthly');
         setMonthlyPlanned(initialData.monthlyPlanned || '');
         setDurationMonths(initialData.durationMonths || '');
+        setStartMonth(initialData.startMonth ?? currentDate.getMonth());
+        setStartYear(initialData.startYear ?? currentDate.getFullYear());
       } else {
         setName('');
         setObjective('');
@@ -39,6 +45,8 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
         setCalcMode('monthly');
         setMonthlyPlanned('');
         setDurationMonths('');
+        setStartMonth(currentDate.getMonth());
+        setStartYear(currentDate.getFullYear());
       }
     }
   }, [isOpen, initialData]);
@@ -75,6 +83,8 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
       durationMonths: calculatedDuration,
       monthlyPlanned: calculatedMonthly,
       status: initialData?.status || 'Ativo',
+      startMonth,
+      startYear,
     });
     onClose();
   };
@@ -83,7 +93,7 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -95,10 +105,11 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
 
         {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className="relative w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]"
+          initial={{ opacity: 0, y: 100 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 100 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="relative w-full sm:max-w-lg bg-white rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] pb-[env(safe-area-inset-bottom)]"
         >
           <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
             <h3 className="text-lg font-black text-gray-900">
@@ -156,6 +167,39 @@ export const CaixinhaModal = ({ isOpen, onClose, onSave, initialData }: Caixinha
                       placeholder="Ex: 0"
                       value={current}
                       onChange={(e) => setCurrent(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="h-px bg-gray-100 my-2" />
+
+                {/* Date Selector */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                      Mês de Início
+                    </label>
+                    <select
+                      value={startMonth}
+                      onChange={(e) => setStartMonth(Number(e.target.value))}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold appearance-none"
+                    >
+                      {MONTH_NAMES.map((m, i) => (
+                        <option key={i} value={i}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                      Ano de Início
+                    </label>
+                    <input
+                      type="number"
+                      min={new Date().getFullYear() - 1}
+                      max={new Date().getFullYear() + 10}
+                      value={startYear}
+                      onChange={(e) => setStartYear(Number(e.target.value))}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-bold"
                     />
                   </div>

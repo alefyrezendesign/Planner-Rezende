@@ -399,7 +399,7 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
 
       <div className="p-4 sm:p-5">
         <div className="flex justify-between items-start gap-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2.5">
               {index !== undefined && (
                 <div className="flex items-center justify-center h-[22px] px-2 text-[10px] font-bold text-gray-400 bg-gray-100/50 border border-gray-200/60 rounded select-none">
@@ -490,11 +490,11 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
                 <span>{task.links.length} {task.links.length === 1 ? "link" : "links"}</span>
               </div>
             )}
-            
             <div className="sm:hidden mt-2.5 mb-2">
               {renderTaskDueDate(task.dueDate, task.status === "Concluído", task.completedAt)}
             </div>
           </div>
+
           <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => { e.stopPropagation(); onEditClick(task); }}
@@ -531,10 +531,12 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2 overflow-hidden">
-            <div
-              className={`bg-blue-500 h-2 transition-all duration-500 ease-out ${progress === 100 ? "bg-green-500" : ""}`}
-              style={{ width: `${progress}%` }}
-            ></div>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={`bg-blue-500 h-2 ${progress === 100 ? "bg-green-500" : ""}`}
+            />
           </div>
         </div>
 
@@ -559,25 +561,19 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
                     {completedSubtasks}/{task.subtasks.length}
                   </span>
                   {isExpanded ? (
-                    <ChevronUp
-                      size={16}
-                      className="text-gray-400 group-hover:text-gray-600"
-                    />
+                    <ChevronUp size={16} className="text-gray-400 group-hover:text-gray-600" />
                   ) : (
-                    <ChevronDown
-                      size={16}
-                      className="text-gray-400 group-hover:text-gray-600"
-                    />
+                    <ChevronDown size={16} className="text-gray-400 group-hover:text-gray-600" />
                   )}
                 </div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                <div
-                  className={`h-1.5 rounded-full transition-all duration-300 ${completedSubtasks === task.subtasks.length ? "bg-green-500" : "bg-blue-400"}`}
-                  style={{
-                    width: `${(completedSubtasks / task.subtasks.length) * 100}%`,
-                  }}
-                ></div>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(completedSubtasks / task.subtasks.length) * 100}%` }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className={`h-1.5 rounded-full ${completedSubtasks === task.subtasks.length ? "bg-green-500" : "bg-blue-400"}`}
+                />
               </div>
             </button>
           </div>

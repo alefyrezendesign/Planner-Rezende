@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PiggyBank, Plus, Trash2, TrendingUp, Layers, Wallet, History, Edit3 } from 'lucide-react';
+import { PiggyBank, Plus, Trash2, TrendingUp, Layers, Wallet, History, Edit3, Play, Pause } from 'lucide-react';
 import { Caixinha, CaixinhaDeposit, MONTH_NAMES } from './types';
 import { formatCurrency } from '../../utils';
 import { CaixinhaModal } from './CaixinhaModal';
@@ -118,7 +118,7 @@ export const CaixinhasTab = ({
       </div>
 
       {/* Compact Unified KPIs Dashboard */}
-      <div className="glass-card p-5 sm:p-6 overflow-hidden relative shadow-sm hover:shadow-md transition-shadow">
+      <div className="glass-card p-5 sm:p-6 overflow-hidden relative">
         <div className="absolute -right-6 -top-6 p-4 opacity-[0.03] pointer-events-none">
           <PiggyBank size={140} />
         </div>
@@ -192,10 +192,25 @@ export const CaixinhasTab = ({
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="font-extrabold text-gray-900 text-[15px] truncate leading-tight">{caixinha.name}</h3>
-                      <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">{caixinha.objective}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[11px] text-gray-400 font-medium truncate">{caixinha.objective}</p>
+                        {caixinha.startYear !== undefined && caixinha.startMonth !== undefined && 
+                         (caixinha.startYear > new Date().getFullYear() || (caixinha.startYear === new Date().getFullYear() && caixinha.startMonth > new Date().getMonth())) && (
+                          <span className="text-[9px] bg-purple-50 text-purple-600 border border-purple-100 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider whitespace-nowrap">
+                            Inicia em {MONTH_NAMES[caixinha.startMonth].slice(0, 3)}/{caixinha.startYear}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center shrink-0">
+                    <button
+                      onClick={(e) => handleToggleStatus(caixinha.id, e)}
+                      className={`p-1.5 rounded-lg transition-all shrink-0 ${isAtivo ? 'text-gray-300 hover:text-orange-500 hover:bg-orange-50/50' : 'text-gray-300 hover:text-emerald-500 hover:bg-emerald-50/50'}`}
+                      title={isAtivo ? "Pausar Caixinha" : "Ativar Caixinha"}
+                    >
+                      {isAtivo ? <Pause size={16} /> : <Play size={16} />}
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -261,7 +276,11 @@ export const CaixinhasTab = ({
                           }
                           
                           return (
-                            <span>Alcança em {MONTH_NAMES[d.getMonth()].slice(0, 3)}/{d.getFullYear()}</span>
+                            <div className="flex items-center justify-between w-full px-3">
+                              <span>Início: {caixinha.startMonth !== undefined && caixinha.startYear !== undefined ? `${MONTH_NAMES[caixinha.startMonth].slice(0, 3)}/${caixinha.startYear}` : 'Imediato'}</span>
+                              <span className="text-gray-300">|</span>
+                              <span>Alcança em {MONTH_NAMES[d.getMonth()].slice(0, 3)}/{d.getFullYear()}</span>
+                            </div>
                           );
                         })()}
                       </div>
