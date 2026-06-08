@@ -255,8 +255,17 @@ export const Finances = ({ session }: FinancesProps) => {
     const totalRevs = monthRevs.reduce((acc, r) => acc + (r.active !== false ? r.value : 0), 0);
     const totalExps = monthExps.reduce((acc, e) => acc + (e.active !== false ? e.value : 0), 0);
 
+    const currentYear = new Date().getFullYear();
+
     const totalCaixas = caixinhas
-      .filter(c => c.status === 'Ativo')
+      .filter(c => {
+        if (c.status !== 'Ativo') return false;
+        if (c.startYear !== undefined && c.startMonth !== undefined) {
+          if (currentYear < c.startYear) return false;
+          if (currentYear === c.startYear && monthIdx < c.startMonth) return false;
+        }
+        return !c.deposits?.some(d => d.month === monthIdx && d.year === currentYear && d.skipped);
+      })
       .reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
 
     const installments = debts.filter(d => {
