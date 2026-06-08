@@ -319,7 +319,7 @@ export const Finances = ({ session }: FinancesProps) => {
             </button>
           ))}
         </div>
-        {/* Botão de Emergência para Zerar Despesas */}
+        {/* Botão de Emergência para Zerar Despesas (Oculto a pedido do usuário)
         <div className="px-2 md:px-4 mt-2 md:mt-0 flex justify-end">
           <button
             onClick={() => {
@@ -334,6 +334,7 @@ export const Finances = ({ session }: FinancesProps) => {
             <span className="hidden sm:inline">Zerar Despesas</span>
           </button>
         </div>
+        */}
 
       </div>
 
