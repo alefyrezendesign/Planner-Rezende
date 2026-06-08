@@ -13,12 +13,12 @@
       "type": "image/png"
     },
     {
-      "src": "/icone-app.png",
+      "src": "/icone-app-520px.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/icone-app.png",
+      "src": "/icone-app-520px.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

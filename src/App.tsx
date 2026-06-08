@@ -1084,10 +1084,16 @@ export default function App() {
         />
       )}
 
-      {/* Mobile-First Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 w-full z-40 bg-white/80 backdrop-blur-xl border-t border-white/50 shadow-[0_-8px_30px_-15px_rgba(0,0,0,0.1)] pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 px-4 transition-all sm:w-auto sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 sm:rounded-3xl sm:pb-2 sm:px-2 sm:border sm:border-white/60 sm:shadow-2xl sm:bg-white/90">
-        <div className="flex items-center justify-around sm:justify-center gap-2 max-w-md mx-auto sm:max-w-none">
-          <button
+      {/* Premium Floating Bottom Navigation (Dock) */}
+      <motion.div 
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.1 }}
+        className="fixed z-40 bottom-4 left-4 right-4 sm:w-auto sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-[24px] px-2 py-2 transition-all flex items-center justify-around sm:justify-center gap-1 sm:gap-2"
+      >
+        <div className="flex items-center justify-around sm:justify-center gap-1 sm:gap-2 w-full max-w-md mx-auto sm:max-w-none">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => setActiveTab("tasks")}
             className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 h-14 sm:h-12 w-full sm:w-auto sm:px-5 rounded-2xl text-[10px] sm:text-sm font-semibold transition-all flex-1 sm:flex-none ${
               activeTab === "tasks" ? "text-primary-600 bg-primary-50/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -1096,11 +1102,12 @@ export default function App() {
             {activeTab === "tasks" && (
               <motion.div layoutId="nav-indicator" className="absolute inset-0 bg-white rounded-2xl shadow-sm border border-slate-100/50 -z-10" />
             )}
-            <ListTodo className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all ${activeTab === "tasks" ? "scale-110" : "scale-100"}`} />
+            <ListTodo className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all duration-300 ${activeTab === "tasks" ? "scale-110 drop-shadow-sm" : "scale-100"}`} />
             <span className="tracking-wide">Tarefas</span>
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => setActiveTab("cars")}
             className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 h-14 sm:h-12 w-full sm:w-auto sm:px-5 rounded-2xl text-[10px] sm:text-sm font-semibold transition-all flex-1 sm:flex-none ${
               activeTab === "cars" ? "text-primary-600 bg-primary-50/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -1109,11 +1116,12 @@ export default function App() {
             {activeTab === "cars" && (
               <motion.div layoutId="nav-indicator" className="absolute inset-0 bg-white rounded-2xl shadow-sm border border-slate-100/50 -z-10" />
             )}
-            <Car className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all ${activeTab === "cars" ? "scale-110" : "scale-100"}`} />
+            <Car className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all duration-300 ${activeTab === "cars" ? "scale-110 drop-shadow-sm" : "scale-100"}`} />
             <span className="tracking-wide">Veículos</span>
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => setActiveTab("houses")}
             className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 h-14 sm:h-12 w-full sm:w-auto sm:px-5 rounded-2xl text-[10px] sm:text-sm font-semibold transition-all flex-1 sm:flex-none ${
               activeTab === "houses" ? "text-primary-600 bg-primary-50/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -1122,11 +1130,12 @@ export default function App() {
             {activeTab === "houses" && (
               <motion.div layoutId="nav-indicator" className="absolute inset-0 bg-white rounded-2xl shadow-sm border border-slate-100/50 -z-10" />
             )}
-            <Home className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all ${activeTab === "houses" ? "scale-110" : "scale-100"}`} />
+            <Home className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all duration-300 ${activeTab === "houses" ? "scale-110 drop-shadow-sm" : "scale-100"}`} />
             <span className="tracking-wide">Imóveis</span>
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => setActiveTab("finances")}
             className={`relative flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 h-14 sm:h-12 w-full sm:w-auto sm:px-5 rounded-2xl text-[10px] sm:text-sm font-semibold transition-all flex-1 sm:flex-none ${
               activeTab === "finances" ? "text-primary-600 bg-primary-50/50" : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
@@ -1135,11 +1144,11 @@ export default function App() {
             {activeTab === "finances" && (
               <motion.div layoutId="nav-indicator" className="absolute inset-0 bg-white rounded-2xl shadow-sm border border-slate-100/50 -z-10" />
             )}
-            <Wallet className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all ${activeTab === "finances" ? "scale-110" : "scale-100"}`} />
+            <Wallet className={`w-[22px] h-[22px] sm:w-[18px] sm:h-[18px] transition-all duration-300 ${activeTab === "finances" ? "scale-110 drop-shadow-sm" : "scale-100"}`} />
             <span className="tracking-wide">Finanças</span>
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Category Filter Modal */}
       {isCategoryModalOpen && (
