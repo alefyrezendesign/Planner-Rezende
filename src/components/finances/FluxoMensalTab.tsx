@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AnimatedNumber } from '../AnimatedNumber';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  PiggyBank, Search, Plus, Trash2, X, ArrowUpRight, ArrowDownRight, WalletCards, Edit2
+  PiggyBank, Search, Plus, Trash2, X, ArrowUpRight, ArrowDownRight, WalletCards, Edit2, CircleOff
 } from 'lucide-react';
 import { Revenue, Expense, Debt, Caixinha, MONTH_NAMES, CATEGORIES_EXPENSES, CATEGORIES_REVENUES } from './types';
 import { formatCurrency } from '../../utils';
@@ -37,6 +37,24 @@ export const FluxoMensalTab = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
   
+  // Simulation State
+  const [ignoredSimulationItemsByMonth, setIgnoredSimulationItemsByMonth] = useState<Record<string, Set<string>>>({});
+  
+  const monthKey = `${selectedYear}-${selectedMonth}`;
+  const isItemIgnoredInSimulation = (itemId: string) => ignoredSimulationItemsByMonth[monthKey]?.has(itemId) || false;
+
+  const toggleIgnoreItemInSimulation = (itemId: string) => {
+    setIgnoredSimulationItemsByMonth(prev => {
+      const newSet = new Set(prev[monthKey] || []);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return { ...prev, [monthKey]: newSet };
+    });
+  };
+
   // Delete Modal State
   const [deleteCandidate, setDeleteCandidate] = useState<{item: Revenue | Expense, type: 'revenue' | 'expense'} | null>(null);
   const [deleteScope, setDeleteScope] = useState<EditScope>('single');
@@ -45,8 +63,15 @@ export const FluxoMensalTab = ({
   const monthRevenues = revenues.filter(r => r.month === selectedMonth && (r.year === undefined || r.year === selectedYear));
   const monthExpenses = expenses.filter(e => e.month === selectedMonth && (e.year === undefined || e.year === selectedYear));
 
-  const totalRevenues = monthRevenues.reduce((acc, r) => acc + (r.active !== false ? r.value : 0), 0);
-  const totalExpenses = monthExpenses.reduce((acc, e) => acc + (e.active !== false ? e.value : 0), 0);
+  const totalRevenues = monthRevenues.reduce((acc, r) => {
+    if (isItemIgnoredInSimulation(r.id)) return acc;
+    return acc + (r.active !== false ? r.value : 0);
+  }, 0);
+
+  const totalExpenses = monthExpenses.reduce((acc, e) => {
+    if (isItemIgnoredInSimulation(e.id)) return acc;
+    return acc + (e.active !== false ? e.value : 0);
+  }, 0);
 
   const totalCaixinhas = caixinhas
     .filter(c => {
@@ -232,24 +257,34 @@ export const FluxoMensalTab = ({
 
             {/* List of revenues with custom UI cards */}
             <div className="divide-y divide-gray-100 max-h-[340px] overflow-y-auto">
-              {filteredRevenues.map((rev) => (
-                <div key={rev.id} className="p-3.5 flex items-center justify-between hover:bg-gray-50/50 transition-colors group">
+              {filteredRevenues.map((rev) => {
+                const isIgnored = isItemIgnoredInSimulation(rev.id);
+                return (
+                <div key={rev.id} className={`p-3.5 flex items-center justify-between hover:bg-gray-50/50 transition-colors group ${isIgnored ? 'opacity-60 bg-slate-50/50' : ''}`}>
                   <div className="min-w-0 pr-3 flex items-center gap-3">
-                    <div className="w-8 h-8 shrink-0 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center">
-                      <ArrowUpRight size={14} className="text-gray-400" />
+                    <div className={`w-8 h-8 shrink-0 border rounded-xl flex items-center justify-center ${isIgnored ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                      {isIgnored ? <CircleOff size={14} className="text-amber-400" /> : <ArrowUpRight size={14} className="text-gray-400" />}
                     </div>
                     <div className="truncate flex flex-col gap-0.5">
-                      <p className="text-xs font-bold text-gray-800 truncate leading-snug flex items-center gap-2">
+                      <p className={`text-xs font-bold truncate leading-snug flex items-center gap-2 ${isIgnored ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                         {cleanEmojis(rev.description)}
                         {rev.active === false && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 uppercase tracking-wider">Pausado</span>}
+                        {isIgnored && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 uppercase tracking-wider border border-amber-200">Ignorado na simulação</span>}
                       </p>
-                      {rev.recurrenceType === 'fixed' && <span className="text-[10px] text-gray-400 font-medium">Recorrente Mensal</span>}
-                      {rev.recurrenceType === 'installments' && <span className="text-[10px] text-gray-400 font-medium">Parcela {rev.installmentIndex}/{rev.installmentsCount}</span>}
-                      {rev.isRecurring && !rev.recurrenceType && <span className="text-[10px] text-gray-400 font-medium">Fixo (Legado)</span>}
+                      {rev.recurrenceType === 'fixed' && <span className={`text-[10px] font-medium ${isIgnored ? 'text-gray-300' : 'text-gray-400'}`}>Recorrente Mensal</span>}
+                      {rev.recurrenceType === 'installments' && <span className={`text-[10px] font-medium ${isIgnored ? 'text-gray-300' : 'text-gray-400'}`}>Parcela {rev.installmentIndex}/{rev.installmentsCount}</span>}
+                      {rev.isRecurring && !rev.recurrenceType && <span className={`text-[10px] font-medium ${isIgnored ? 'text-gray-300' : 'text-gray-400'}`}>Fixo (Legado)</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className={`text-xs font-black ${rev.active === false ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{formatCurrency(rev.value)}</span>
+                    <button 
+                      onClick={() => toggleIgnoreItemInSimulation(rev.id)}
+                      className={`p-1.5 rounded-full transition-all ${isIgnored ? 'text-amber-500 bg-amber-50 hover:bg-amber-100' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100'}`}
+                      title={isIgnored ? "Voltar a considerar no cálculo" : "Ignorar na simulação"}
+                    >
+                      <CircleOff size={14} />
+                    </button>
+                    <span className={`text-xs font-black ${rev.active === false ? 'text-gray-400 line-through' : isIgnored ? 'text-gray-400 line-through' : 'text-gray-900'}`}>{formatCurrency(rev.value)}</span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => onOpenEditTransaction(rev, 'revenue')}
@@ -268,7 +303,8 @@ export const FluxoMensalTab = ({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {filteredRevenues.length === 0 && (
                 <div className="text-center py-12 text-gray-400 italic font-medium">
                   Nenhuma receita encontrada para os filtros aplicados.
@@ -304,25 +340,35 @@ export const FluxoMensalTab = ({
 
             {/* List of expenses with customized UI cards */}
             <div className="divide-y divide-gray-100 max-h-[340px] overflow-y-auto">
-              {filteredExpenses.map((exp) => (
-                <div key={exp.id} className="p-3.5 flex items-center justify-between hover:bg-gray-50/50 transition-colors group">
+              {filteredExpenses.map((exp) => {
+                const isIgnored = isItemIgnoredInSimulation(exp.id);
+                return (
+                <div key={exp.id} className={`p-3.5 flex items-center justify-between hover:bg-gray-50/50 transition-colors group ${isIgnored ? 'opacity-60 bg-slate-50/50' : ''}`}>
                   <div className="min-w-0 pr-3 flex items-center gap-3">
-                    <div className="w-8 h-8 shrink-0 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center">
-                      <ArrowDownRight size={14} className="text-gray-400" />
+                    <div className={`w-8 h-8 shrink-0 border rounded-xl flex items-center justify-center ${isIgnored ? 'bg-amber-50 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                      {isIgnored ? <CircleOff size={14} className="text-amber-400" /> : <ArrowDownRight size={14} className="text-gray-400" />}
                     </div>
                     <div className="truncate flex flex-col gap-0.5">
-                      <p className="text-xs font-bold text-gray-800 truncate leading-snug flex items-center gap-2">
+                      <p className={`text-xs font-bold truncate leading-snug flex items-center gap-2 ${isIgnored ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                         {cleanEmojis(exp.description)}
                         {exp.active === false && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-500 uppercase tracking-wider">Pausado</span>}
                         {exp.isLimit && <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700 uppercase tracking-widest border border-indigo-200 shadow-xs">Limite</span>}
+                        {isIgnored && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 uppercase tracking-wider border border-amber-200">Ignorado na simulação</span>}
                       </p>
-                      {exp.recurrenceType === 'fixed' && <span className="text-[10px] text-gray-400 font-medium">Recorrente Mensal</span>}
-                      {exp.recurrenceType === 'installments' && <span className="text-[10px] text-gray-400 font-medium">Parcela {exp.installmentIndex}/{exp.installmentsCount}</span>}
-                      {exp.isRecurring && !exp.recurrenceType && <span className="text-[10px] text-gray-400 font-medium">Fixo (Legado)</span>}
+                      {exp.recurrenceType === 'fixed' && <span className={`text-[10px] font-medium ${isIgnored ? 'text-gray-300' : 'text-gray-400'}`}>Recorrente Mensal</span>}
+                      {exp.recurrenceType === 'installments' && <span className={`text-[10px] font-medium ${isIgnored ? 'text-gray-300' : 'text-gray-400'}`}>Parcela {exp.installmentIndex}/{exp.installmentsCount}</span>}
+                      {exp.isRecurring && !exp.recurrenceType && <span className={`text-[10px] font-medium ${isIgnored ? 'text-gray-300' : 'text-gray-400'}`}>Fixo (Legado)</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className={`text-xs font-bold ${exp.active === false ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{formatCurrency(exp.value)}</span>
+                    <button 
+                      onClick={() => toggleIgnoreItemInSimulation(exp.id)}
+                      className={`p-1.5 rounded-full transition-all ${isIgnored ? 'text-amber-500 bg-amber-50 hover:bg-amber-100' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-100 opacity-0 group-hover:opacity-100'}`}
+                      title={isIgnored ? "Voltar a considerar no cálculo" : "Ignorar na simulação"}
+                    >
+                      <CircleOff size={14} />
+                    </button>
+                    <span className={`text-xs font-bold ${exp.active === false ? 'text-gray-400 line-through' : isIgnored ? 'text-gray-400 line-through' : 'text-gray-800'}`}>{formatCurrency(exp.value)}</span>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => onOpenEditTransaction(exp, 'expense')}
@@ -341,7 +387,8 @@ export const FluxoMensalTab = ({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {filteredExpenses.length === 0 && (
                 <div className="text-center py-12 text-gray-400 italic font-medium">
                   Nenhuma despesa encontrada para os filtros aplicados.
