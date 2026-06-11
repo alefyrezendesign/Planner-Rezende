@@ -226,7 +226,7 @@ export async function fetchUserFinances(userId: string) {
       description: r.description,
       value: Number(r.value),
       month: r.month,
-      year: r.year,
+      year: r.year === null ? undefined : r.year,
       category: r.category,
       recurrenceType: r.recurrence_type,
       groupId: r.group_id,
@@ -239,7 +239,7 @@ export async function fetchUserFinances(userId: string) {
       description: e.description,
       value: Number(e.value),
       month: e.month,
-      year: e.year,
+      year: e.year === null ? undefined : e.year,
       category: e.category,
       recurrenceType: e.recurrence_type,
       groupId: e.group_id,
@@ -256,7 +256,7 @@ export async function fetchUserFinances(userId: string) {
       installmentsCount: d.installments_count,
       installmentValue: Number(d.installment_value),
       startMonth: d.start_month,
-      startYear: d.start_year,
+      startYear: d.start_year === null ? undefined : d.start_year,
       status: d.status,
       paidInstallments: d.paid_installments,
       observations: d.observations
@@ -272,7 +272,7 @@ export async function fetchUserFinances(userId: string) {
       calculationMode: c.calculation_mode,
       durationMonths: c.duration_months,
       startMonth: c.start_month,
-      startYear: c.start_year,
+      startYear: c.start_year === null ? undefined : c.start_year,
       deposits: c.deposits || []
     }))
   };
