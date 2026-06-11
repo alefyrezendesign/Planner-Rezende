@@ -148,15 +148,6 @@ export default function App() {
         setTaskOrder(val);
         localStorage.setItem("user_tasks_order", JSON.stringify(val));
       }
-    } else if (taskOrderLocally) {
-      try {
-        const val = JSON.parse(taskOrderLocally);
-        if (Array.isArray(val)) {
-          supabase.auth.updateUser({ data: { user_tasks_order: val } }).catch(console.error);
-        }
-      } catch (e) {
-        console.error(e);
-      }
     }
   };
 
@@ -194,7 +185,6 @@ export default function App() {
       if (orderChanged) {
         setTaskOrder(updatedOrder);
         localStorage.setItem("user_tasks_order", JSON.stringify(updatedOrder));
-        await supabase.auth.updateUser({ data: { user_tasks_order: updatedOrder } }).catch(console.error);
       } else {
         setTaskOrder(currentOrder);
       }
@@ -598,9 +588,6 @@ export default function App() {
     
     setTaskOrder(newTaskOrder);
     localStorage.setItem("user_tasks_order", JSON.stringify(newTaskOrder));
-    if (session) {
-      supabase.auth.updateUser({ data: { user_tasks_order: newTaskOrder } }).catch(console.error);
-    }
   };
 
   const taskSensors = useSensors(
@@ -646,9 +633,6 @@ export default function App() {
       const reorderedOrder = arrayMove(newTaskOrder, globalOldIndex, globalNewIndex);
       setTaskOrder(reorderedOrder);
       localStorage.setItem("user_tasks_order", JSON.stringify(reorderedOrder));
-      if (session) {
-        supabase.auth.updateUser({ data: { user_tasks_order: reorderedOrder } }).catch(console.error);
-      }
     }
   };
 
