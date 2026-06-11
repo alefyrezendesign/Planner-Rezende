@@ -48,7 +48,7 @@ export const Finances = ({ session }: FinancesProps) => {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [caixinhas, setCaixinhas] = useState<Caixinha[]>([]);
 
-  // Hydration from LocalStorage AND Supabase if session is ready
+  // Hydration   // Load initial state (from LocalStorage first, then check Cloud)
   useEffect(() => {
     const rawRevs = localStorage.getItem(STORAGE_KEYS.REVENUES);
     const rawExps = localStorage.getItem(STORAGE_KEYS.EXPENSES);
@@ -61,47 +61,67 @@ export const Finances = ({ session }: FinancesProps) => {
     let finalDebts = rawDebts ? JSON.parse(rawDebts) : INITIAL_DEBTS;
     let finalCaixas = rawCaixas ? JSON.parse(rawCaixas) : INITIAL_CAIXINHAS;
 
-    if (session?.user?.user_metadata) {
-      const meta = session.user.user_metadata;
-      const cloudTs = Number(meta.finances_last_modified || '0');
-      
-      // Apenas sobrescreve o local com dados da nuvem se a nuvem for mais recente (ex: acesso via outro dispositivo)
-      // Se der F5 e o updateUser tiver falhado (rate limit), o localTs será mais novo e ignoraremos os "fantasmas" da nuvem.
-      if (cloudTs > localTs) {
-        if (meta.fin_revenues_v3) finalRevs = meta.fin_revenues_v3;
-        if (meta.fin_expenses_v3) finalExps = meta.fin_expenses_v3;
-        if (meta.fin_debts_v3) finalDebts = meta.fin_debts_v3;
-        if (meta.fin_caixinhas_v3) finalCaixas = meta.fin_caixinhas_v3;
-        
-        // Atualiza o cache local para refletir a nova versão baixada da nuvem
-        localStorage.setItem(STORAGE_KEYS.REVENUES, JSON.stringify(finalRevs));
-        localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(finalExps));
-        localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(finalDebts));
-        localStorage.setItem(STORAGE_KEYS.CAIXINHAS, JSON.stringify(finalCaixas));
-        localStorage.setItem('finances_last_modified', cloudTs.toString());
-      }
-    }
-
+    // Seta primeiro o local storage para a tela não ficar vazia
     setRevenues(finalRevs);
     setExpenses(finalExps);
     setDebts(finalDebts);
     setCaixinhas(finalCaixas);
+
+    // Busca dados da nova tabela no Supabase em background
+    const fetchCloudData = async () => {
+      if (!session?.user?.id) return;
+      
+      const { data: cloudData, error } = await supabase
+        .from('user_finances')
+        .select('data')
+        .eq('user_id', session.user.id)
+        .single();
+        
+      if (!error && cloudData?.data) {
+        const meta = cloudData.data;
+        const cloudTs = Number(meta.finances_last_modified || '0');
+        
+        // Sobrescreve local apenas se a nuvem for mais recente (ex: acesso via outro dispositivo)
+        if (cloudTs > localTs) {
+          if (meta.fin_revenues_v3) setRevenues(meta.fin_revenues_v3);
+          if (meta.fin_expenses_v3) setExpenses(meta.fin_expenses_v3);
+          if (meta.fin_debts_v3) setDebts(meta.fin_debts_v3);
+          if (meta.fin_caixinhas_v3) setCaixinhas(meta.fin_caixinhas_v3);
+          
+          localStorage.setItem(STORAGE_KEYS.REVENUES, JSON.stringify(meta.fin_revenues_v3 || finalRevs));
+          localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(meta.fin_expenses_v3 || finalExps));
+          localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(meta.fin_debts_v3 || finalDebts));
+          localStorage.setItem(STORAGE_KEYS.CAIXINHAS, JSON.stringify(meta.fin_caixinhas_v3 || finalCaixas));
+          localStorage.setItem('finances_last_modified', cloudTs.toString());
+        }
+      }
+    };
+    
+    fetchCloudData();
   }, [session]);
 
-  // Sync to Cloud (Supabase user metadata) debounced to avoid rate limit issues
+  // Sync to Cloud (Nova Tabela user_finances) debounced
   useEffect(() => {
     if (!session?.user?.id) return;
     
+    // Ignora a primeira renderização onde tudo pode estar vazio antes do load local
+    if (!revenues.length && !expenses.length && !debts.length && !caixinhas.length) return;
+    
     const delayDebounceFn = setTimeout(() => {
-      supabase.auth.updateUser({
+      supabase.from('user_finances').upsert({
+        user_id: session.user.id,
         data: {
           fin_revenues_v3: revenues,
           fin_expenses_v3: expenses,
           fin_debts_v3: debts,
           fin_caixinhas_v3: caixinhas,
           finances_last_modified: Number(localStorage.getItem('finances_last_modified') || Date.now())
-        }
-      }).catch(err => console.error("Erro ao sincronizar finanças no Supabase:", err));
+        },
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' })
+      .then(({ error }) => {
+        if (error) console.error("Erro ao sincronizar finanças no Supabase:", error);
+      });
     }, 1500);
 
     return () => clearTimeout(delayDebounceFn);
