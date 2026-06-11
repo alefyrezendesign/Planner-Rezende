@@ -202,3 +202,142 @@ function parseHouseRecord(record: any): RealEstateScenario {
     amortizationType: record.amortization_type
   };
 }
+
+// ==========================================
+// Finances Relational API
+// ==========================================
+
+export async function fetchUserFinances(userId: string) {
+  const [
+    { data: revData },
+    { data: expData },
+    { data: debtData },
+    { data: caixaData }
+  ] = await Promise.all([
+    supabase.from('fin_revenues').select('*').eq('user_id', userId),
+    supabase.from('fin_expenses').select('*').eq('user_id', userId),
+    supabase.from('fin_debts').select('*').eq('user_id', userId),
+    supabase.from('fin_caixinhas').select('*').eq('user_id', userId)
+  ]);
+
+  return {
+    revenues: (revData || []).map(r => ({
+      id: r.id,
+      description: r.description,
+      value: Number(r.value),
+      month: r.month,
+      year: r.year,
+      category: r.category,
+      recurrenceType: r.recurrence_type,
+      groupId: r.group_id,
+      installmentsCount: r.installments_count,
+      installmentIndex: r.installment_index,
+      active: r.active
+    })),
+    expenses: (expData || []).map(e => ({
+      id: e.id,
+      description: e.description,
+      value: Number(e.value),
+      month: e.month,
+      year: e.year,
+      category: e.category,
+      recurrenceType: e.recurrence_type,
+      groupId: e.group_id,
+      installmentsCount: e.installments_count,
+      installmentIndex: e.installment_index,
+      active: e.active,
+      isLimit: e.is_limit
+    })),
+    debts: (debtData || []).map(d => ({
+      id: d.id,
+      name: d.name,
+      creditor: d.creditor,
+      totalValue: Number(d.total_value),
+      installmentsCount: d.installments_count,
+      installmentValue: Number(d.installment_value),
+      startMonth: d.start_month,
+      startYear: d.start_year,
+      status: d.status,
+      paidInstallments: d.paid_installments,
+      observations: d.observations
+    })),
+    caixinhas: (caixaData || []).map(c => ({
+      id: c.id,
+      name: c.name,
+      objective: c.objective,
+      targetValue: Number(c.target_value),
+      currentValue: Number(c.current_value),
+      monthlyPlanned: Number(c.monthly_planned),
+      status: c.status,
+      calculationMode: c.calculation_mode,
+      durationMonths: c.duration_months,
+      startMonth: c.start_month,
+      startYear: c.start_year,
+      deposits: c.deposits || []
+    }))
+  };
+}
+
+export async function upsertFinancesItems(table: 'fin_revenues' | 'fin_expenses' | 'fin_debts' | 'fin_caixinhas', items: any[], userId: string) {
+  if (!items || items.length === 0) return;
+  
+  let mapped: any[] = [];
+  if (table === 'fin_revenues' || table === 'fin_expenses') {
+    mapped = items.map(i => ({
+      id: i.id,
+      user_id: userId,
+      description: i.description,
+      value: i.value,
+      month: i.month,
+      year: i.year,
+      category: i.category,
+      recurrence_type: i.recurrenceType,
+      group_id: i.groupId,
+      installments_count: i.installmentsCount,
+      installment_index: i.installmentIndex,
+      active: i.active !== false,
+      ...(table === 'fin_expenses' ? { is_limit: i.isLimit || false } : {})
+    }));
+  } else if (table === 'fin_debts') {
+    mapped = items.map(i => ({
+      id: i.id,
+      user_id: userId,
+      name: i.name,
+      creditor: i.creditor,
+      total_value: i.totalValue,
+      installments_count: i.installmentsCount,
+      installment_value: i.installmentValue,
+      start_month: i.startMonth,
+      start_year: i.startYear,
+      status: i.status,
+      paid_installments: i.paidInstallments,
+      observations: i.observations
+    }));
+  } else if (table === 'fin_caixinhas') {
+    mapped = items.map(i => ({
+      id: i.id,
+      user_id: userId,
+      name: i.name,
+      objective: i.objective,
+      target_value: i.targetValue,
+      current_value: i.currentValue,
+      monthly_planned: i.monthlyPlanned,
+      status: i.status,
+      calculation_mode: i.calculationMode,
+      duration_months: i.durationMonths,
+      start_month: i.startMonth,
+      start_year: i.startYear,
+      deposits: i.deposits
+    }));
+  }
+
+  const { error } = await supabase.from(table).upsert(mapped);
+  if (error) console.error("Error upserting", table, error);
+}
+
+export async function deleteFinancesItems(table: 'fin_revenues' | 'fin_expenses' | 'fin_debts' | 'fin_caixinhas', ids: string[]) {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabase.from(table).delete().in('id', ids);
+  if (error) console.error("Error deleting", table, error);
+}
+

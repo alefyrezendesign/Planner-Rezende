@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Wallet, Receipt, PiggyBank, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabase';
+import { fetchUserFinances, upsertFinancesItems, deleteFinancesItems } from '../api';
 
 import { Revenue, Expense, Debt, Caixinha, MONTH_NAMES } from './finances/types';
 import { MonthSelector } from './finances/MonthSelector';
@@ -70,88 +71,75 @@ export const Finances = ({ session }: FinancesProps) => {
     // Busca dados da nova tabela no Supabase em background
     const fetchCloudData = async () => {
       if (!session?.user?.id) return;
-      
-      const { data: cloudData, error } = await supabase
-        .from('user_finances')
-        .select('data')
-        .eq('user_id', session.user.id)
-        .single();
+      try {
+        const cloudData = await fetchUserFinances(session.user.id);
         
-      if (!error && cloudData?.data) {
-        const meta = cloudData.data;
-        const cloudTs = Number(meta.finances_last_modified || '0');
+        // Se temos dados na nuvem, usamos como fonte da verdade (sobrepondo o LocalStorage)
+        // Mas podemos comparar para ver se o LocalStorage tem algo mais recente, porém para simplificar e garantir 
+        // a nova arquitetura, sempre forçaremos o uso da nuvem se tiver registros (já que migramos)
+        const hasAnyCloudData = cloudData.revenues.length > 0 || cloudData.expenses.length > 0 || cloudData.debts.length > 0 || cloudData.caixinhas.length > 0;
         
-        // Sobrescreve local apenas se a nuvem for mais recente (ex: acesso via outro dispositivo)
-        if (cloudTs > localTs) {
-          if (meta.fin_revenues_v3) setRevenues(meta.fin_revenues_v3);
-          if (meta.fin_expenses_v3) setExpenses(meta.fin_expenses_v3);
-          if (meta.fin_debts_v3) setDebts(meta.fin_debts_v3);
-          if (meta.fin_caixinhas_v3) setCaixinhas(meta.fin_caixinhas_v3);
+        if (hasAnyCloudData) {
+          setRevenues(cloudData.revenues);
+          setExpenses(cloudData.expenses);
+          setDebts(cloudData.debts);
+          setCaixinhas(cloudData.caixinhas);
           
-          localStorage.setItem(STORAGE_KEYS.REVENUES, JSON.stringify(meta.fin_revenues_v3 || finalRevs));
-          localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(meta.fin_expenses_v3 || finalExps));
-          localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(meta.fin_debts_v3 || finalDebts));
-          localStorage.setItem(STORAGE_KEYS.CAIXINHAS, JSON.stringify(meta.fin_caixinhas_v3 || finalCaixas));
-          localStorage.setItem('finances_last_modified', cloudTs.toString());
+          localStorage.setItem(STORAGE_KEYS.REVENUES, JSON.stringify(cloudData.revenues));
+          localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(cloudData.expenses));
+          localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(cloudData.debts));
+          localStorage.setItem(STORAGE_KEYS.CAIXINHAS, JSON.stringify(cloudData.caixinhas));
+          updateLocalTs();
         }
+      } catch (err) {
+        console.error("Erro ao carregar finanças da nuvem:", err);
       }
     };
     
     fetchCloudData();
   }, [session]);
 
-  // Sync to Cloud (Nova Tabela user_finances) debounced
-  useEffect(() => {
-    if (!session?.user?.id) return;
-    
-    // Ignora a primeira renderização onde tudo pode estar vazio antes do load local
-    if (!revenues.length && !expenses.length && !debts.length && !caixinhas.length) return;
-    
-    const delayDebounceFn = setTimeout(() => {
-      supabase.from('user_finances').upsert({
-        user_id: session.user.id,
-        data: {
-          fin_revenues_v3: revenues,
-          fin_expenses_v3: expenses,
-          fin_debts_v3: debts,
-          fin_caixinhas_v3: caixinhas,
-          finances_last_modified: Number(localStorage.getItem('finances_last_modified') || Date.now())
-        },
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id' })
-      .then(({ error }) => {
-        if (error) console.error("Erro ao sincronizar finanças no Supabase:", error);
-      });
-    }, 1500);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [revenues, expenses, debts, caixinhas, session]);
-
   // Sync state helpers
   const updateLocalTs = () => localStorage.setItem('finances_last_modified', Date.now().toString());
 
   const syncRevenues = (data: Revenue[]) => {
+    const deletedIds = revenues.filter(r => !data.find(d => d.id === r.id)).map(r => r.id);
     setRevenues(data);
     localStorage.setItem(STORAGE_KEYS.REVENUES, JSON.stringify(data));
     updateLocalTs();
+    if (!session?.user?.id) return;
+    if (deletedIds.length > 0) deleteFinancesItems('fin_revenues', deletedIds);
+    if (data.length > 0) upsertFinancesItems('fin_revenues', data, session.user.id);
   };
 
   const syncExpenses = (data: Expense[]) => {
+    const deletedIds = expenses.filter(r => !data.find(d => d.id === r.id)).map(r => r.id);
     setExpenses(data);
     localStorage.setItem(STORAGE_KEYS.EXPENSES, JSON.stringify(data));
     updateLocalTs();
+    if (!session?.user?.id) return;
+    if (deletedIds.length > 0) deleteFinancesItems('fin_expenses', deletedIds);
+    if (data.length > 0) upsertFinancesItems('fin_expenses', data, session.user.id);
   };
 
   const syncDebts = (data: Debt[]) => {
+    const deletedIds = debts.filter(r => !data.find(d => d.id === r.id)).map(r => r.id);
     setDebts(data);
     localStorage.setItem(STORAGE_KEYS.DEBTS, JSON.stringify(data));
     updateLocalTs();
+    if (!session?.user?.id) return;
+    if (deletedIds.length > 0) deleteFinancesItems('fin_debts', deletedIds);
+    if (data.length > 0) upsertFinancesItems('fin_debts', data, session.user.id);
   };
 
   const syncCaixinhas = (data: Caixinha[]) => {
+    const deletedIds = caixinhas.filter(r => !data.find(d => d.id === r.id)).map(r => r.id);
     setCaixinhas(data);
     localStorage.setItem(STORAGE_KEYS.CAIXINHAS, JSON.stringify(data));
     updateLocalTs();
+    if (!session?.user?.id) return;
+    if (deletedIds.length > 0) deleteFinancesItems('fin_caixinhas', deletedIds);
+    if (data.length > 0) upsertFinancesItems('fin_caixinhas', data, session.user.id);
   };
 
   const handleToggleSkipCaixinha = (caixinhaId: string, month: number, year: number) => {
