@@ -209,7 +209,7 @@ export function CarSimulator({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="glass-card overflow-hidden transition-all duration-300"
+                className="saas-card overflow-hidden transition-all duration-300"
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Image Section */}
@@ -391,7 +391,7 @@ export function CarSimulator({
                         </div>
 
                         {/* Financiamento */}
-                        <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 flex flex-col justify-between h-full">
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between h-full">
                           <div className="space-y-3 mb-6">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-slate-500 font-medium">Valor do Veículo</span>
@@ -461,7 +461,7 @@ export function CarSimulator({
                       </div>
 
                       {/* Seguro Auto Section */}
-                      <div className="mt-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-100">
+                      <div className="mt-6 bg-slate-50 p-5 rounded-2xl border border-slate-200">
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                           {/* Config and form */}
                           <div className="flex-1 space-y-4">
@@ -572,8 +572,8 @@ export function CarSimulator({
         </AnimatePresence>
 
         {cars.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300">
-            <Car className="mx-auto text-gray-300 mb-4" size={48} />
+          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+            <Car className="mx-auto text-slate-300 mb-4" size={48} />
             <p className="text-gray-600 font-medium text-lg">
               Nenhum cenário de veículo simulado.
             </p>

@@ -680,9 +680,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-gray-900 font-sans pb-32 sm:pb-28">
+    <div className="min-h-screen bg-transparent text-slate-900 font-sans pb-32 sm:pb-28">
       {/* Header Mobile-First */}
-      <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 sm:py-4 max-w-7xl mx-auto h-16 sm:h-20">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -764,7 +764,7 @@ export default function App() {
                 <DashboardStats tasks={tasks} />
                 
                 {/* Advanced Inline Mobile Filters */}
-                <div className="mb-6 flex flex-col gap-3.5 bg-gray-50/70 border border-gray-100 p-4 rounded-3xl">
+                <div className="saas-card mb-6 flex flex-col gap-3.5 p-4 sm:p-5">
                   <div className="flex items-center justify-between gap-3 w-full">
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 hide-scrollbar w-full sm:w-auto">
                       <button
@@ -1085,12 +1085,12 @@ export default function App() {
         />
       )}
 
-      {/* Premium Floating Bottom Navigation (Dock) */}
+      {/* Premium Solid Bottom Navigation (Dock) */}
       <motion.div 
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", damping: 20, stiffness: 300, delay: 0.1 }}
-        className="fixed z-40 bottom-4 left-4 right-4 sm:w-auto sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 bg-white/80 backdrop-blur-xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08)] rounded-[24px] px-2 py-2 transition-all flex items-center justify-around sm:justify-center gap-1 sm:gap-2"
+        className="fixed z-40 bottom-4 left-4 right-4 sm:w-auto sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 bg-white border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-[24px] px-2 py-2 transition-all flex items-center justify-around sm:justify-center gap-1 sm:gap-2"
       >
         <div className="flex items-center justify-around sm:justify-center gap-1 sm:gap-2 w-full max-w-md mx-auto sm:max-w-none">
           <motion.button

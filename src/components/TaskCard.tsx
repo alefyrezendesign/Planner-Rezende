@@ -375,14 +375,14 @@ export function TaskCard({ task, index, totalTasks, onUpdate, onEditClick, onDet
       animate={isOverlay ? undefined : { opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
       onClick={() => !isOverlay && onDetailClick(task)}
-      className={`glass-card-premium mb-4 transition-all duration-300 ${isStatusMenuOpen ? 'relative z-50' : 'relative z-10'} ${
+      className={`saas-card mb-4 transition-all duration-300 ${isStatusMenuOpen ? 'relative z-50' : 'relative z-10'} ${
         isOverlay
-          ? "ring-2 ring-primary-500 shadow-2xl pointer-events-none scale-[1.02]"
+          ? "ring-2 ring-blue-500 shadow-xl pointer-events-none scale-[1.02]"
           : task.status === "Concluído"
-          ? "bg-green-50/40 border-green-200/60 cursor-pointer"
+          ? "bg-slate-50 border-slate-200 cursor-pointer opacity-80 hover:opacity-100"
           : task.status === "Pendente"
-          ? "bg-orange-50/30 border-orange-200/60 cursor-pointer"
-          : "cursor-pointer"
+          ? "border-orange-200 cursor-pointer"
+          : "cursor-pointer hover:border-blue-200"
       }`}
     >
       {/* Optional Card Cover Image */}

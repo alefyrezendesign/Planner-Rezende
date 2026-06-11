@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Download, ChevronDown, ChevronRight, TrendingUp, TrendingDown, PiggyBank, CreditCard } from 'lucide-react';
+import { Download, ChevronDown, ChevronRight, Circle, PiggyBank, CreditCard, ArrowUp, ArrowDown } from 'lucide-react';
 import { Revenue, Expense, Debt, Caixinha, MONTH_NAMES } from './types';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, calculateVariation, ItemCategory } from '../../utils';
+
+const DotIcon = (props: any) => <Circle {...props} size={8} fill="currentColor" />;
 
 interface VisaoTabelaTabProps {
   selectedYear: number;
@@ -30,19 +32,23 @@ export const VisaoTabelaTab = ({
     setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
   };
 
-  // Helper to build 12-month arrays
-  const buildEmptyMonths = () => Array(12).fill(0);
+  // Helper to build 13-month arrays (index 0 = Dec prev year, index 1-12 = Jan-Dec current year)
+  const buildEmptyMonths = () => Array(13).fill(0);
 
   // 1. Receitas
   const receitasMap = new Map<string, number[]>();
   revenues.forEach(r => {
     if (r.active === false) return;
     const rY = r.year !== undefined ? r.year : new Date().getFullYear();
-    if (rY !== selectedYear) return;
+    let idx = -1;
+    if (rY === selectedYear) idx = r.month + 1;
+    else if (rY === selectedYear - 1 && r.month === 11) idx = 0;
     
-    const desc = r.description.trim();
-    if (!receitasMap.has(desc)) receitasMap.set(desc, buildEmptyMonths());
-    receitasMap.get(desc)![r.month] += r.value;
+    if (idx >= 0) {
+      const desc = r.description.trim();
+      if (!receitasMap.has(desc)) receitasMap.set(desc, buildEmptyMonths());
+      receitasMap.get(desc)![idx] += r.value;
+    }
   });
 
   // 2. Despesas (Gerais e Limites separadas)
@@ -52,15 +58,19 @@ export const VisaoTabelaTab = ({
   expenses.forEach(e => {
     if (e.active === false) return;
     const eY = e.year !== undefined ? e.year : new Date().getFullYear();
-    if (eY !== selectedYear) return;
-    
-    const desc = e.description.trim();
-    if (e.isLimit) {
-      if (!limitesMap.has(desc)) limitesMap.set(desc, buildEmptyMonths());
-      limitesMap.get(desc)![e.month] += e.value;
-    } else {
-      if (!despesasMap.has(desc)) despesasMap.set(desc, buildEmptyMonths());
-      despesasMap.get(desc)![e.month] += e.value;
+    let idx = -1;
+    if (eY === selectedYear) idx = e.month + 1;
+    else if (eY === selectedYear - 1 && e.month === 11) idx = 0;
+
+    if (idx >= 0) {
+      const desc = e.description.trim();
+      if (e.isLimit) {
+        if (!limitesMap.has(desc)) limitesMap.set(desc, buildEmptyMonths());
+        limitesMap.get(desc)![idx] += e.value;
+      } else {
+        if (!despesasMap.has(desc)) despesasMap.set(desc, buildEmptyMonths());
+        despesasMap.get(desc)![idx] += e.value;
+      }
     }
   });
 
@@ -75,7 +85,7 @@ export const VisaoTabelaTab = ({
     const desc = c.name.trim();
     if (!caixinhasMap.has(desc)) caixinhasMap.set(desc, buildEmptyMonths());
     
-    for (let m = 0; m < 12; m++) {
+    for (let m = -1; m < 12; m++) {
       const currentTotal = selectedYear * 12 + m;
       if (currentTotal < startTotal) continue; // Not started yet
 
@@ -87,9 +97,11 @@ export const VisaoTabelaTab = ({
       }
 
       // Check if skipped
-      const isSkipped = c.deposits?.some(d => d.month === m && d.year === selectedYear && d.skipped);
+      const checkYear = m === -1 ? selectedYear - 1 : selectedYear;
+      const checkMonth = m === -1 ? 11 : m;
+      const isSkipped = c.deposits?.some(d => d.month === checkMonth && d.year === checkYear && d.skipped);
       if (!isSkipped) {
-        caixinhasMap.get(desc)![m] += (c.monthlyPlanned || 0);
+        caixinhasMap.get(desc)![m + 1] += (c.monthlyPlanned || 0);
       }
     }
   });
@@ -106,10 +118,10 @@ export const VisaoTabelaTab = ({
     const desc = d.name.trim();
     if (!parcelamentosMap.has(desc)) parcelamentosMap.set(desc, buildEmptyMonths());
 
-    for (let m = 0; m < 12; m++) {
+    for (let m = -1; m < 12; m++) {
       const currentTotal = selectedYear * 12 + m;
       if (currentTotal >= startTotal && currentTotal < endTotal) {
-        parcelamentosMap.get(desc)![m] += (d.installmentValue || 0);
+        parcelamentosMap.get(desc)![m + 1] += (d.installmentValue || 0);
       }
     }
   });
@@ -121,7 +133,7 @@ export const VisaoTabelaTab = ({
   const totalCaixinhas = buildEmptyMonths();
   const totalParcelamentos = buildEmptyMonths();
   
-  for (let m = 0; m < 12; m++) {
+  for (let m = 0; m < 13; m++) {
     receitasMap.forEach(arr => totalRevenues[m] += arr[m]);
     despesasMap.forEach(arr => totalExpenses[m] += arr[m]);
     limitesMap.forEach(arr => totalLimites[m] += arr[m]);
@@ -130,7 +142,7 @@ export const VisaoTabelaTab = ({
   }
 
   const saldoLivre = buildEmptyMonths();
-  for (let m = 0; m < 12; m++) {
+  for (let m = 0; m < 13; m++) {
     saldoLivre[m] = totalRevenues[m] - (totalExpenses[m] + totalLimites[m] + totalCaixinhas[m] + totalParcelamentos[m]);
   }
 
@@ -148,16 +160,16 @@ export const VisaoTabelaTab = ({
       lines.push(`"${title.toUpperCase()}"`); // Cabeçalho do Grupo
       
       entries.forEach(([name, values]) => {
-        const rowTotal = values.reduce((a, b) => a + b, 0);
+        const rowTotal = values.slice(1).reduce((a, b) => a + b, 0);
         const safeName = name.replace(/"/g, '""');
-        const formattedValues = values.map(v => `"${formatCurrency(v)}"`);
+        const formattedValues = values.slice(1).map(v => `"${formatCurrency(v)}"`);
         lines.push(`"${safeName}";${formattedValues.join(';')};"${formatCurrency(rowTotal)}"`);
       });
     };
 
     const addTotalsToCSV = (title: string, values: number[]) => {
-      const rowTotal = values.reduce((a, b) => a + b, 0);
-      const formattedValues = values.map(v => `"${formatCurrency(v)}"`);
+      const rowTotal = values.slice(1).reduce((a, b) => a + b, 0);
+      const formattedValues = values.slice(1).map(v => `"${formatCurrency(v)}"`);
       lines.push(`"${title}";${formattedValues.join(';')};"${formatCurrency(rowTotal)}"`);
     };
 
@@ -191,7 +203,7 @@ export const VisaoTabelaTab = ({
   };
 
   // UI Table Renderer
-  const renderRowGroup = (title: string, map: Map<string, number[]>, colorClass: string, isLimit: boolean = false, Icon?: React.ElementType) => {
+  const renderRowGroup = (title: string, map: Map<string, number[]>, colorClass: string, isLimit: boolean = false, Icon?: React.ElementType, categoryType: ItemCategory = 'revenue') => {
     const entries = Array.from(map.entries());
     if (entries.length === 0) return null;
 
@@ -212,7 +224,7 @@ export const VisaoTabelaTab = ({
           <td colSpan={13} className="bg-slate-50 border-b border-slate-200"></td>
         </tr>
         {isExpanded && entries.map(([name, values], i) => {
-          const rowTotal = values.reduce((a, b) => a + b, 0);
+          const rowTotal = values.slice(1).reduce((a, b) => a + b, 0);
           return (
             <tr key={i} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100/50">
               <td className="px-4 py-3 text-xs font-bold text-slate-700 sticky left-0 bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10 flex items-center gap-2 border-b border-slate-200">
@@ -220,11 +232,23 @@ export const VisaoTabelaTab = ({
                 {name}
                 {isLimit && <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 uppercase tracking-widest border border-indigo-200">Limite</span>}
               </td>
-              {values.map((v, m) => (
-                <td key={m} className={`px-4 py-3 text-xs font-medium text-center border border-slate-200 ${v > 0 ? 'text-slate-700' : 'text-slate-300'}`}>
-                  {v > 0 ? formatCurrency(v) : '-'}
-                </td>
-              ))}
+              {values.slice(1).map((v, m) => {
+                const prevValue = values[m];
+                const variation = calculateVariation(v, prevValue, categoryType);
+                const ArrowIcon = variation.direction === 'up' ? ArrowUp : ArrowDown;
+                return (
+                  <td key={m} className={`px-4 py-3 text-xs font-medium text-center border border-slate-200 relative group`}>
+                    <div className={`flex items-center justify-center gap-1.5 ${v > 0 ? 'text-slate-700' : 'text-slate-300'}`}>
+                      <span>{v > 0 ? formatCurrency(v) : '-'}</span>
+                      {variation.hasChange && variation.direction && (
+                        <span title={variation.tooltip} className={`${variation.color} flex items-center justify-center cursor-default bg-slate-50 rounded-full px-0.5`}>
+                          <ArrowIcon size={12} strokeWidth={3} />
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
               <td className="px-4 py-3 text-xs font-black text-slate-800 text-center bg-slate-50/50 border border-slate-200">
                 {formatCurrency(rowTotal)}
               </td>
@@ -236,13 +260,13 @@ export const VisaoTabelaTab = ({
   };
 
   const renderTotalsRow = (title: string, values: number[], colorClass: string, bgClass: string = "bg-slate-50") => {
-    const rowTotal = values.reduce((a, b) => a + b, 0);
+    const rowTotal = values.slice(1).reduce((a, b) => a + b, 0);
     return (
       <tr className={`${bgClass} border-t-2 border-slate-200/50`}>
         <td className={`px-4 py-3 text-[11px] font-black uppercase tracking-widest sticky left-0 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] z-10 whitespace-nowrap border border-slate-200 bg-white ${colorClass}`}>
           {title}
         </td>
-        {values.map((v, m) => (
+        {values.slice(1).map((v, m) => (
           <td key={m} className={`px-4 py-3 text-xs font-black text-center border border-slate-200 ${colorClass}`}>
             {formatCurrency(v)}
           </td>
@@ -255,7 +279,7 @@ export const VisaoTabelaTab = ({
   };
 
   return (
-    <div className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col">
       <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
         <div>
           <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
@@ -294,11 +318,11 @@ export const VisaoTabelaTab = ({
             </thead>
             <tbody>
               {/* Grupos de Itens */}
-              {renderRowGroup('Receitas', receitasMap, 'text-emerald-600', false, TrendingUp)}
-              {renderRowGroup('Limites de Gastos', limitesMap, 'text-indigo-600', true, TrendingDown)}
-              {renderRowGroup('Despesas', despesasMap, 'text-rose-600', false, TrendingDown)}
-              {renderRowGroup('Parcelamentos', parcelamentosMap, 'text-purple-600', false, CreditCard)}
-              {renderRowGroup('Caixinhas', caixinhasMap, 'text-blue-600', false, PiggyBank)}
+              {renderRowGroup('Receitas', receitasMap, 'text-emerald-600', false, DotIcon, 'revenue')}
+              {renderRowGroup('Limites de Gastos', limitesMap, 'text-indigo-600', true, DotIcon, 'limit')}
+              {renderRowGroup('Despesas', despesasMap, 'text-rose-600', false, DotIcon, 'expense')}
+              {renderRowGroup('Parcelamentos', parcelamentosMap, 'text-purple-600', false, CreditCard, 'debt')}
+              {renderRowGroup('Caixinhas', caixinhasMap, 'text-blue-600', false, PiggyBank, 'caixinha')}
 
               {/* Separador de Totais */}
               <tr className="bg-slate-200/50">
@@ -316,7 +340,7 @@ export const VisaoTabelaTab = ({
                 <td className="px-4 py-5 text-[12px] font-black uppercase tracking-widest sticky left-0 bg-white text-slate-900 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border border-slate-200">
                   SALDO LIVRE
                 </td>
-                {saldoLivre.map((v, m) => (
+                {saldoLivre.slice(1).map((v, m) => (
                   <td key={m} className="px-4 py-5 text-[13px] font-black text-center bg-white border border-slate-200">
                     <div className="flex items-center justify-center gap-1.5">
                       <div className={`w-2 h-2 rounded-full ${v > 0 ? 'bg-emerald-500' : v < 0 ? 'bg-rose-500' : 'bg-slate-300'}`} />
@@ -326,8 +350,8 @@ export const VisaoTabelaTab = ({
                 ))}
                 <td className="px-4 py-5 text-[14px] font-black text-center bg-slate-50 border border-slate-200 border-l">
                   <div className="flex items-center justify-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${saldoLivre.reduce((a,b)=>a+b,0) > 0 ? 'bg-emerald-500' : saldoLivre.reduce((a,b)=>a+b,0) < 0 ? 'bg-rose-500' : 'bg-slate-300'}`} />
-                    <span className="text-slate-900">{formatCurrency(saldoLivre.reduce((a,b)=>a+b,0))}</span>
+                    <div className={`w-2 h-2 rounded-full ${saldoLivre.slice(1).reduce((a,b)=>a+b,0) > 0 ? 'bg-emerald-500' : saldoLivre.slice(1).reduce((a,b)=>a+b,0) < 0 ? 'bg-rose-500' : 'bg-slate-300'}`} />
+                    <span className="text-slate-900">{formatCurrency(saldoLivre.slice(1).reduce((a,b)=>a+b,0))}</span>
                   </div>
                 </td>
               </tr>

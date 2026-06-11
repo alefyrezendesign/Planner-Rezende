@@ -95,7 +95,7 @@ export const CaixinhasTab = ({
   return (
     <div className="space-y-6">
       {/* Header controls */}
-      <div className="flex items-center justify-between gap-3 border-b border-gray-150 pb-3">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
         <div>
           <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
             <PiggyBank className="text-blue-600" size={20} />
@@ -118,7 +118,7 @@ export const CaixinhasTab = ({
       </div>
 
       {/* Compact Unified KPIs Dashboard */}
-      <div className="glass-card p-5 sm:p-6 overflow-hidden relative">
+      <div className="saas-card p-5 sm:p-6 overflow-hidden relative">
         <div className="absolute -right-6 -top-6 p-4 opacity-[0.03] pointer-events-none">
           <PiggyBank size={140} />
         </div>
@@ -178,15 +178,15 @@ export const CaixinhasTab = ({
           return (
             <div
               key={caixinha.id}
-              className={`border border-gray-200 rounded-3xl p-5 hover:border-gray-300 shadow-sm transition-all flex flex-col justify-between ${
-                !isAtivo ? 'opacity-60 grayscale bg-gray-50/70' : 'bg-white'
+              className={`border border-slate-200 rounded-3xl p-5 hover:border-slate-300 transition-all flex flex-col justify-between ${
+                !isAtivo ? 'opacity-60 grayscale bg-slate-50' : 'bg-white'
               }`}
             >
               <div>
                 <div className="flex justify-between items-start gap-2 mb-4">
                   <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
                     <div className={`p-3 rounded-2xl transition-colors shrink-0 ${
-                      isAtivo ? 'bg-blue-50 text-blue-600' : 'bg-gray-150 text-gray-400'
+                      isAtivo ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'
                     }`}>
                       <PiggyBank size={20} className={isAtivo ? "opacity-100" : "opacity-70"} />
                     </div>
@@ -290,7 +290,7 @@ export const CaixinhasTab = ({
               </div>
 
               {/* Dynamic Action and quick funding zone for touchscreens */}
-              <div className="mt-5 pt-4 border-t border-gray-100 flex flex-col gap-3">
+              <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col gap-3">
                 
                 {/* Simulated connection status block */}
                 <div
@@ -365,10 +365,10 @@ export const CaixinhasTab = ({
         })}
 
         {caixinhas.length === 0 && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 rounded-3xl text-gray-500 bg-gray-50/50">
-            <PiggyBank className="mx-auto text-gray-300 mb-4 animate-bounce" size={48} />
-            <p className="font-bold text-gray-700 text-lg">Nenhuma caixinha criada.</p>
-            <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">Crie metas para organizar e visualizar o progresso da sua poupança.</p>
+          <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-300 rounded-3xl text-slate-500 bg-slate-50">
+            <PiggyBank className="mx-auto text-slate-300 mb-4 animate-bounce" size={48} />
+            <p className="font-bold text-slate-700 text-lg">Nenhuma caixinha criada.</p>
+            <p className="text-sm text-slate-400 mt-1 max-w-sm mx-auto">Crie metas para organizar e visualizar o progresso da sua poupança.</p>
           </div>
         )}
       </div>

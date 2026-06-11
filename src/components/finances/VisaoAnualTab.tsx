@@ -53,7 +53,7 @@ export const VisaoAnualTab = ({
       </div>
 
       {/* Functional Consolidated Dashboard */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm mb-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0 md:divide-x divide-slate-100">
           
           {/* Coluna 1: Entradas */}
@@ -109,7 +109,7 @@ export const VisaoAnualTab = ({
       <div>
         {/* 1. MOBILE CARDS VIEW (Displayed on mobile. Hidden on md breakpoint and original) */}
         <div className="block md:hidden space-y-3">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">Meses do Ano (Detalhamento Rápido)</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Meses do Ano (Detalhamento Rápido)</p>
           <div className="space-y-2.5">
             {allMonthsData.map((d) => {
               const isNegative = d.saldoLivre < 0;
@@ -121,21 +121,21 @@ export const VisaoAnualTab = ({
                   onClick={() => onFocusMonth(d.index)}
                   className={`p-4 rounded-2xl border transition-all active:scale-[0.98] ${
                     isNegative 
-                      ? 'bg-rose-50/30 border-rose-100 hover:border-rose-200' 
+                      ? 'bg-rose-50 border-rose-100 hover:border-rose-200' 
                       : hasStrongSobra 
-                      ? 'bg-emerald-50/20 border-emerald-100 hover:border-emerald-250'
-                      : 'bg-white border-gray-200 hover:border-gray-300'
+                      ? 'bg-emerald-50 border-emerald-100 hover:border-emerald-200'
+                      : 'bg-white border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-extrabold text-sm text-gray-900">{d.name}</h4>
-                      <p className="text-[10px] text-gray-400 mt-0.5">Clique para carregar e lançar</p>
+                      <h4 className="font-extrabold text-sm text-slate-900">{d.name}</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Clique para carregar e lançar</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-xs font-black px-2 py-1 rounded-lg ${
                         isNegative
-                          ? 'bg-rose-100/70 text-rose-600'
+                          ? 'bg-rose-100 text-rose-600'
                           : 'bg-blue-100 text-blue-600'
                       }`}>
                         {formatCurrency(d.saldoLivre)}
@@ -143,22 +143,22 @@ export const VisaoAnualTab = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-gray-100 text-[10px] text-gray-500 font-medium">
+                  <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-slate-100 text-[10px] text-slate-500 font-medium">
                     <div>
                       <span className="block text-emerald-600 font-extrabold">Entradas</span>
-                      <span className="font-bold opacity-80">{formatCurrency(d.totalRevenues)}</span>
+                      <span className="font-bold">{formatCurrency(d.totalRevenues)}</span>
                     </div>
                     <div>
-                      <span className="block text-gray-400">Gastos Ord.</span>
-                      <span className="font-bold opacity-80">{formatCurrency(d.totalExpenses)}</span>
+                      <span className="block text-slate-400">Gastos Ord.</span>
+                      <span className="font-bold">{formatCurrency(d.totalExpenses)}</span>
                     </div>
                     <div>
                       <span className="block text-amber-500">Caixas</span>
-                      <span className="font-bold opacity-80">{formatCurrency(d.totalCaixinhas)}</span>
+                      <span className="font-bold">{formatCurrency(d.totalCaixinhas)}</span>
                     </div>
                     <div>
                       <span className="block text-indigo-500">Parc.</span>
-                      <span className="font-bold opacity-80">{formatCurrency(d.totalInstallments)}</span>
+                      <span className="font-bold">{formatCurrency(d.totalInstallments)}</span>
                     </div>
                   </div>
                 </div>
@@ -168,12 +168,12 @@ export const VisaoAnualTab = ({
         </div>
 
         {/* 2. DESKTOP SPREADSHEET TABLE VIEW (Hidden on mobile. Flex on md and above) */}
-        <div className="hidden md:block overflow-x-auto border border-gray-200 rounded-2xl shadow-sm bg-white">
+        <div className="hidden md:block overflow-x-auto border border-slate-200 rounded-2xl bg-white">
           <table className="w-full text-xs text-left border-collapse">
-            <thead className="bg-gray-50 border-b border-gray-200 text-[10px] font-extrabold uppercase tracking-widest text-gray-400">
+            <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
               <tr>
                 <th className="p-4 pl-6">Mês Referência</th>
-                <th className="p-4 text-emerald-650 font-black">Receitas (+)</th>
+                <th className="p-4 text-emerald-600 font-black">Receitas (+)</th>
                 <th className="p-4 text-rose-500 font-black">Despesas (-)</th>
                 <th className="p-4 text-amber-600">Caixas</th>
                 <th className="p-4 text-indigo-600">Parcelados</th>
@@ -181,7 +181,7 @@ export const VisaoAnualTab = ({
                 <th className="p-4 text-center pr-6">Gerir</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 font-bold">
+            <tbody className="divide-y divide-slate-100 font-bold">
               {allMonthsData.map((d) => {
                 const isNegative = d.saldoLivre < 0;
                 const hasStrongSobra = d.saldoLivre > 2500;
@@ -190,27 +190,27 @@ export const VisaoAnualTab = ({
                   <tr 
                     key={d.index}
                     onClick={() => onFocusMonth(d.index)}
-                    className={`group cursor-pointer hover:bg-blue-50/40 transition-colors ${
-                      isNegative ? 'bg-rose-50/20' : hasStrongSobra ? 'bg-emerald-50/10' : ''
+                    className={`group cursor-pointer hover:bg-slate-50 transition-colors ${
+                      isNegative ? 'bg-rose-50/50' : hasStrongSobra ? 'bg-emerald-50/50' : ''
                     }`}
                   >
-                    <td className="p-4 pl-6 font-extrabold text-gray-900 text-sm">
+                    <td className="p-4 pl-6 font-extrabold text-slate-900 text-sm">
                       {d.name}
                     </td>
                     <td className="p-4 text-emerald-600">
                       {formatCurrency(d.totalRevenues)}
                     </td>
-                    <td className="p-4 text-gray-500 font-medium">
+                    <td className="p-4 text-slate-500 font-medium">
                       {formatCurrency(d.totalExpenses)}
                     </td>
-                    <td className="p-4 text-gray-500 font-medium">
+                    <td className="p-4 text-slate-500 font-medium">
                       {formatCurrency(d.totalCaixinhas)}
                     </td>
                     <td className="p-4 text-indigo-500">
                       {formatCurrency(d.totalInstallments)}
                     </td>
                     <td className="p-4 text-right text-sm">
-                      <span className={isNegative ? 'text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg font-black' : 'text-blue-600'}>
+                      <span className={isNegative ? 'text-rose-600 bg-rose-100 px-2.5 py-1 rounded-lg font-black' : 'text-blue-600'}>
                         {formatCurrency(d.saldoLivre)}
                       </span>
                     </td>
@@ -226,11 +226,11 @@ export const VisaoAnualTab = ({
               <tr className="bg-slate-50 border-t-2 border-slate-200 font-black text-sm">
                 <td className="p-4 pl-6 text-slate-800">TOTAL CONSOLIDADO</td>
                 <td className="p-4 text-emerald-600">{formatCurrency(annualTotalRevenues)}</td>
-                <td className="p-4 text-gray-700">{formatCurrency(annualTotalExpenses)}</td>
+                <td className="p-4 text-slate-700">{formatCurrency(annualTotalExpenses)}</td>
                 <td className="p-4 text-amber-700">{formatCurrency(annualTotalCaixinhas)}</td>
                 <td className="p-4 text-indigo-700">{formatCurrency(annualTotalInstallments)}</td>
                 <td className="p-4 text-right pr-4 text-base">
-                  <span className={annualTotalNet >= 0 ? 'text-blue-700 bg-blue-105/20 px-3 py-1 rounded-xl' : 'text-rose-700 bg-rose-100 px-3 py-1 rounded-xl'}>
+                  <span className={annualTotalNet >= 0 ? 'text-blue-700 bg-blue-100 px-3 py-1 rounded-xl' : 'text-rose-700 bg-rose-100 px-3 py-1 rounded-xl'}>
                     {formatCurrency(annualTotalNet)}
                   </span>
                 </td>
@@ -242,7 +242,7 @@ export const VisaoAnualTab = ({
       </div>
 
       {/* Dynamic Graph Matrix */}
-      <div className="glass-card p-5 sm:p-6 mt-6">
+      <div className="saas-card p-5 sm:p-6 mt-6">
         <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-wider mb-5 flex items-center gap-1.5 border-b border-slate-100 pb-3">
           <BarChart2 size={16} className="text-primary-500" /> Gráfico Anual
         </h4>

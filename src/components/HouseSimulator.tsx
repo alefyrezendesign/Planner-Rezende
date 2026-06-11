@@ -208,7 +208,7 @@ export function HouseSimulator({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="glass-card overflow-hidden transition-all duration-300"
+                className="saas-card overflow-hidden transition-all duration-300"
               >
                 <div className="flex flex-col md:flex-row">
                   {/* Image Section */}
@@ -420,7 +420,7 @@ export function HouseSimulator({
                         </div>
 
                         {/* Financiamento */}
-                        <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-100 flex flex-col justify-between h-full">
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col justify-between h-full">
                           <div className="space-y-3 mb-6">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-slate-500 font-medium">Valor a financiar</span>
@@ -522,8 +522,8 @@ export function HouseSimulator({
         </AnimatePresence>
 
         {houses.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300">
-            <Home className="mx-auto text-gray-300 mb-4" size={48} />
+          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+            <Home className="mx-auto text-slate-300 mb-4" size={48} />
             <p className="text-gray-600 font-medium text-lg">
               Nenhum cenário de imóvel simulado.
             </p>

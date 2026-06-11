@@ -47,7 +47,7 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
   const generalProgress = totalItems > 0 ? Math.round((totalCompletedItems / totalItems) * 100) : 0;
 
   return (
-    <div className="glass-card-premium mb-6 sm:mb-8 overflow-hidden">
+    <div className="saas-card mb-6 sm:mb-8 overflow-hidden">
       <div className="p-4 sm:p-5">
         
         {/* Header / Progresso Geral */}
@@ -56,12 +56,11 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
             onClick={toggleExpand}
             className="flex items-center gap-2 hover:opacity-85 transition-opacity text-left"
           >
-            <div className="bg-blue-50 text-blue-600 p-1.5 rounded-lg">
+            <div className="bg-blue-50 border border-blue-100 text-blue-600 p-1.5 rounded-lg">
               <BarChart3 size={16} />
             </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Replanner Status</span>
-              <h2 className="text-sm font-bold text-gray-900 tracking-tight leading-none mt-0.5">Progresso Geral</h2>
+            <div className="flex flex-col justify-center">
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight leading-none">Progresso Geral</h2>
             </div>
           </button>
           
@@ -69,31 +68,31 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
             <span className="text-xl sm:text-2xl font-black text-blue-600 leading-none">{generalProgress}%</span>
             <button
               onClick={toggleExpand}
-              className="p-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-150 rounded-lg transition-all flex items-center justify-center"
+              className="p-1.5 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all flex items-center justify-center"
               title={isExpanded ? "Minimizar" : "Expandir"}
             >
               {isExpanded ? (
-                <ChevronUp size={18} className="text-gray-600" />
+                <ChevronUp size={18} className="text-slate-600" />
               ) : (
-                <ChevronDown size={18} className="text-gray-600" />
+                <ChevronDown size={18} className="text-slate-600" />
               )}
             </button>
           </div>
         </div>
 
         {/* Barra de Progresso Geral */}
-        <div className="w-full bg-slate-100 rounded-full h-2 mt-4 overflow-hidden">
+        <div className="w-full bg-slate-100 border border-slate-200/60 rounded-full h-2 mt-4 overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${generalProgress}%` }}
             transition={{ duration: 1, ease: "easeOut" }}
-            className="bg-linear-to-r from-blue-600 to-green-500 h-full rounded-full" 
+            className="bg-blue-600 h-full rounded-full" 
           />
         </div>
 
         {/* Breakdown Grid detailed views - Animated Accordion */}
         <div className={`grid transition-all duration-300 ease-in-out ${
-          isExpanded ? 'grid-rows-[1fr] opacity-100 mt-4 pt-5 border-t border-gray-100' : 'grid-rows-[0fr] opacity-0 m-0 p-0 border-t-0 border-transparent'
+          isExpanded ? 'grid-rows-[1fr] opacity-100 mt-4 pt-5 border-t border-slate-100' : 'grid-rows-[0fr] opacity-0 m-0 p-0 border-t-0 border-transparent'
         }`}>
           <div className="overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 pb-1">
@@ -101,28 +100,28 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
               {/* Tarefas */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-widest">
+                  <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">
                     Tarefas 
                   </h3>
-                  <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-medium">{totalTasks}</span>
+                  <span className="bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-medium">{totalTasks}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100/50 flex flex-col justify-center min-h-[50px]">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">A Fazer</p>
-                    <p className="text-base font-bold text-gray-700 mt-0.5">{notStarted}</p>
+                  <div className="bg-white rounded-xl px-3 py-2 border border-slate-200 flex flex-col justify-center min-h-[50px]">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">A Fazer</p>
+                    <p className="text-base font-bold text-slate-800 mt-0.5">{notStarted}</p>
                   </div>
-                  <div className="bg-blue-50/50 rounded-xl px-3 py-2 border border-blue-50 flex flex-col justify-center min-h-[50px]">
-                    <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Fazendo</p>
-                    <p className="text-base font-bold text-blue-600 mt-0.5">{inProgress}</p>
+                  <div className="bg-blue-50 rounded-xl px-3 py-2 border border-blue-200/60 flex flex-col justify-center min-h-[50px]">
+                    <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Fazendo</p>
+                    <p className="text-base font-bold text-blue-700 mt-0.5">{inProgress}</p>
                   </div>
-                  <div className="bg-orange-50/50 rounded-xl px-3 py-2 border border-orange-50 flex flex-col justify-center min-h-[50px]">
-                    <p className="text-[10px] text-orange-400 font-bold uppercase tracking-wider">Pendentes</p>
-                    <p className="text-base font-bold text-orange-600 mt-0.5">{pending}</p>
+                  <div className="bg-orange-50 rounded-xl px-3 py-2 border border-orange-200/60 flex flex-col justify-center min-h-[50px]">
+                    <p className="text-[10px] text-orange-600 font-bold uppercase tracking-wider">Pendentes</p>
+                    <p className="text-base font-bold text-orange-700 mt-0.5">{pending}</p>
                   </div>
-                  <div className="bg-emerald-50/50 rounded-xl px-3 py-2 border border-emerald-50 flex flex-col justify-center min-h-[50px]">
-                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Feitas</p>
-                    <p className="text-base font-bold text-emerald-600 mt-0.5">{completed}</p>
+                  <div className="bg-emerald-50 rounded-xl px-3 py-2 border border-emerald-200/60 flex flex-col justify-center min-h-[50px]">
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Feitas</p>
+                    <p className="text-base font-bold text-emerald-700 mt-0.5">{completed}</p>
                   </div>
                 </div>
               </div>
@@ -130,20 +129,20 @@ export function DashboardStats({ tasks }: DashboardStatsProps) {
               {/* Subtarefas */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-widest">
+                  <h3 className="text-[11px] font-bold text-slate-800 uppercase tracking-widest">
                     Subtarefas 
                   </h3>
-                  <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-[10px] font-medium">{totalSubtasks}</span>
+                  <span className="bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-medium">{totalSubtasks}</span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 w-full lg:w-2/3">
-                  <div className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100/50 flex flex-col justify-center min-h-[50px]">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pendentes</p>
-                    <p className="text-base font-bold text-gray-700 mt-0.5">{subtasksPending}</p>
+                  <div className="bg-white rounded-xl px-3 py-2 border border-slate-200 flex flex-col justify-center min-h-[50px]">
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Pendentes</p>
+                    <p className="text-base font-bold text-slate-800 mt-0.5">{subtasksPending}</p>
                   </div>
-                  <div className="bg-emerald-50/50 rounded-xl px-3 py-2 border border-emerald-50 flex flex-col justify-center min-h-[50px]">
-                    <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Concluídas</p>
-                    <p className="text-base font-bold text-emerald-600 mt-0.5">{subtasksCompleted}</p>
+                  <div className="bg-emerald-50 rounded-xl px-3 py-2 border border-emerald-200/60 flex flex-col justify-center min-h-[50px]">
+                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Concluídas</p>
+                    <p className="text-base font-bold text-emerald-700 mt-0.5">{subtasksCompleted}</p>
                   </div>
                 </div>
               </div>

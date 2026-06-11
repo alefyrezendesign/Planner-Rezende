@@ -146,7 +146,7 @@ export const FluxoMensalTab = ({
   return (
     <div className="space-y-5">
       {/* Visual Balance Card: Clean Light Mode */}
-      <div className="p-5 rounded-3xl border border-gray-200 bg-white shadow-sm">
+      <div className="p-5 rounded-3xl border border-slate-200 bg-white">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <span className="text-[10px] bg-gray-100 font-black uppercase px-2.5 py-1 rounded-full text-gray-500 tracking-widest inline-flex items-center gap-1">
@@ -183,21 +183,21 @@ export const FluxoMensalTab = ({
         </div>
 
         {/* Dynamic breakdown mini timeline */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-6 pt-5 border-t border-gray-100/80 text-xs">
-          <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50">
-            <span className="text-[10px] font-black text-gray-400 uppercase block mb-1">Receita</span>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-6 pt-5 border-t border-slate-100 text-xs">
+          <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+            <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Receita</span>
             <span className="font-black text-[13px] text-emerald-600">{formatCurrency(totalRevenues)}</span>
           </div>
-          <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50">
-            <span className="text-[10px] font-black text-gray-400 uppercase block mb-1">Despesas</span>
+          <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+            <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Despesas</span>
             <span className="font-black text-[13px] text-rose-600">{formatCurrency(totalExpenses)}</span>
           </div>
-          <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50">
-            <span className="text-[10px] font-black text-gray-400 uppercase block mb-1">Caixinhas</span>
+          <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+            <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Caixinhas</span>
             <span className="font-black text-[13px] text-blue-600">{formatCurrency(totalCaixinhas)}</span>
           </div>
-          <div className="bg-gray-50/50 p-2.5 rounded-2xl border border-gray-100/50">
-            <span className="text-[10px] font-black text-gray-400 uppercase block mb-1">Parcelamentos</span>
+          <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+            <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Parcelamentos</span>
             <span className="font-black text-[13px] text-indigo-600">{formatCurrency(totalInstallments)}</span>
           </div>
         </div>
@@ -239,9 +239,9 @@ export const FluxoMensalTab = ({
         {/* ========================================================= */}
         {/* ENTRADAS / RECEITAS SEGMENT */}
         {/* ========================================================= */}
-        <div className="border border-gray-200 rounded-2xl bg-white shadow-xs overflow-hidden flex flex-col justify-between">
+        <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="bg-gray-50/50 border-b border-gray-100 px-4 py-3.5 flex justify-between items-center select-none">
+            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3.5 flex justify-between items-center select-none">
               <div className="flex items-center gap-2">
                 <ArrowUpRight size={16} className="text-emerald-500 shrink-0" strokeWidth={3} />
                 <span className="font-black text-[11px] text-gray-800 uppercase tracking-widest">RECEITA</span>
@@ -322,9 +322,9 @@ export const FluxoMensalTab = ({
         {/* ========================================================= */}
         {/* DESPESAS SEGMENT */}
         {/* ========================================================= */}
-        <div className="border border-gray-200 rounded-2xl bg-white shadow-xs overflow-hidden flex flex-col justify-between">
+        <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="bg-gray-50/50 border-b border-gray-100 px-4 py-3.5 flex justify-between items-center select-none">
+            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3.5 flex justify-between items-center select-none">
               <div className="flex items-center gap-2">
                 <ArrowDownRight size={16} className="text-rose-500 shrink-0" strokeWidth={3} />
                 <span className="font-black text-[11px] text-gray-800 uppercase tracking-widest">DESPESAS</span>
@@ -409,7 +409,7 @@ export const FluxoMensalTab = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
         {/* Aportes Caixinhas linked summary */}
-        <div className="p-5 bg-white border border-gray-200 rounded-3xl flex flex-col justify-between text-xs gap-4 shadow-sm">
+        <div className="p-5 bg-white border border-slate-200 rounded-3xl flex flex-col justify-between text-xs gap-4">
           <div>
             <p className="font-black text-[11px] uppercase text-gray-800 tracking-widest flex items-center gap-2">
               <PiggyBank size={16} className="text-blue-500" /> Caixinhas
@@ -476,7 +476,7 @@ export const FluxoMensalTab = ({
         </div>
 
         {/* Parcelamento debts linked summary */}
-        <div className="p-5 bg-white border border-gray-200 rounded-3xl flex flex-col justify-between text-xs gap-4 shadow-sm">
+        <div className="p-5 bg-white border border-slate-200 rounded-3xl flex flex-col justify-between text-xs gap-4">
           <div>
             <p className="font-black text-[11px] uppercase text-gray-800 tracking-widest flex items-center gap-2">
               <WalletCards size={16} className="text-indigo-500" /> Parcelamentos
