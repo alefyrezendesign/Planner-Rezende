@@ -1,14 +1,20 @@
 const _importMetaEnv = {};
 (globalThis as any).import = { meta: { env: _importMetaEnv } };
-
-import { createClient } from '@supabase/supabase-js';
-const supabaseUrl = 'https://nzlqolllmruntddyommw.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'fake_key'; // We might get error if fake key is used but we'll try just connecting
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from './src/supabase';
 
 async function run() {
-  const { data, error } = await supabase.from('profiles').select('*').limit(1);
-  console.log("Profiles:", error ? error.message : "Success");
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log("Logged in user:", session?.user?.email);
+  const { data: tasks, error } = await supabase.from('tasks').select('*');
+  if (error) {
+    console.error("Fetch error:", error);
+    return;
+  }
+  console.log("Found", tasks?.length, "tasks");
+  tasks?.forEach(t => {
+    if (t.subtasks && !Array.isArray(t.subtasks)) {
+      console.log("CORRUPTED SUBTASKS on task", t.title, ":", typeof t.subtasks, t.subtasks);
+    }
+  });
 }
 run();

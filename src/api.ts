@@ -131,8 +131,14 @@ export async function deleteHouse(userId: string, houseId: string) {
 
 // Helpers
 function parseTaskRecord(record: any): Task {
-  const allSubtasks = record.subtasks || [];
-  const metaItem = allSubtasks.find((st: any) => st.id === "task-meta-info");
+  let allSubtasks = [];
+  try {
+    allSubtasks = Array.isArray(record.subtasks) ? record.subtasks : [];
+  } catch(e) {
+    console.error("Erro ao ler subtasks", e);
+  }
+  
+  const metaItem = allSubtasks.find((st: any) => st?.id === "task-meta-info");
   let description = undefined;
   let imageUrl = undefined;
   let links = undefined;
