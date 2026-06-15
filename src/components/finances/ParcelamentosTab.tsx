@@ -82,6 +82,22 @@ export const ParcelamentosTab = ({
 
   const currentMonthIndex = new Date().getMonth();
 
+  const activeDebts = debts.filter((d) => d.status === 'Ativo');
+  const pausedDebts = debts.filter((d) => d.status === 'Pausado');
+
+  const getRemainingValue = (d: Debt) => {
+    const paid = d.paidInstallments || 0;
+    return Math.max(0, d.totalValue - (paid * d.installmentValue));
+  };
+
+  const totalRemaining = debts.reduce((acc, d) => acc + getRemainingValue(d), 0);
+  const activeRemaining = activeDebts.reduce((acc, d) => acc + getRemainingValue(d), 0);
+  const pausedRemaining = pausedDebts.reduce((acc, d) => acc + getRemainingValue(d), 0);
+
+  const activeMonthlyImpact = activeDebts.reduce((acc, d) => acc + d.installmentValue, 0);
+  const pausedMonthlyImpact = pausedDebts.reduce((acc, d) => acc + d.installmentValue, 0);
+  const totalMonthlyImpact = activeMonthlyImpact + pausedMonthlyImpact;
+
   return (
     <div className="space-y-6">
       {/* Header controls */}
@@ -105,6 +121,65 @@ export const ParcelamentosTab = ({
           <Plus size={14} />
           <span>Novo parcelamento</span>
         </button>
+      </div>
+
+      {/* Dashboard */}
+      <div className="saas-card p-5 sm:p-6 overflow-hidden relative">
+        <div className="absolute -right-6 -top-6 p-4 opacity-[0.03] pointer-events-none">
+          <Receipt size={140} />
+        </div>
+        
+        <div className="flex flex-col gap-5 relative">
+          {/* Main Balance */}
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Receipt size={14} className="text-indigo-500" /> 
+              Saldo Devedor Restante
+            </p>
+            <p className="text-4xl sm:text-5xl font-black text-indigo-600 tracking-tight mt-1 leading-none">
+              {formatCurrency(totalRemaining)}
+            </p>
+          </div>
+          
+          {/* Secondary KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 border-t border-slate-100">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Calendar size={12} className="text-primary-500" /> 
+                Comprometimento Mensal Total
+              </p>
+              <p className="text-xl font-black text-primary-600 mt-1 leading-none">
+                {formatCurrency(totalMonthlyImpact)}
+              </p>
+            </div>
+            
+            <div className="sm:border-l sm:border-slate-100 sm:pl-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                Ativos ({activeDebts.length})
+              </p>
+              <p className="text-lg font-black text-emerald-600 mt-1 leading-none">
+                {formatCurrency(activeRemaining)}
+              </p>
+              <p className="text-[10px] text-slate-500 mt-1.5 font-bold">
+                Parcelas: {formatCurrency(activeMonthlyImpact)}/mês
+              </p>
+            </div>
+
+            <div className="sm:border-l sm:border-slate-100 sm:pl-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                Pausados ({pausedDebts.length})
+              </p>
+              <p className="text-lg font-black text-amber-600 mt-1 leading-none">
+                {formatCurrency(pausedRemaining)}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1.5 font-bold">
+                Parcelas: {formatCurrency(pausedMonthlyImpact)}/mês
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Catalog of Ongoing Installments */}

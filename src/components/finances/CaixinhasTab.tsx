@@ -87,9 +87,14 @@ export const CaixinhasTab = ({
     );
   };
 
-  const activeCaixinhasTotal = caixinhas
-    .filter((c) => c.status === 'Ativo')
-    .reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
+  const activeCaixinhas = caixinhas.filter((c) => c.status === 'Ativo');
+  const pausedCaixinhas = caixinhas.filter((c) => c.status === 'Pausado');
+  const activeValue = activeCaixinhas.reduce((acc, c) => acc + c.currentValue, 0);
+  const pausedValue = pausedCaixinhas.reduce((acc, c) => acc + c.currentValue, 0);
+
+  const activeMonthly = activeCaixinhas.reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
+  const pausedMonthly = pausedCaixinhas.reduce((acc, c) => acc + (c.monthlyPlanned || 0), 0);
+  const totalMonthly = activeMonthly + pausedMonthly;
 
 
   return (
@@ -136,34 +141,41 @@ export const CaixinhasTab = ({
           </div>
           
           {/* Secondary KPIs */}
-          <div className="flex items-center gap-4 pt-5 border-t border-slate-100">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 border-t border-slate-100">
+            <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                 <TrendingUp size={12} className="text-primary-500" /> 
-                Aporte Mensal
+                Aporte Mensal Total
               </p>
               <p className="text-xl font-black text-primary-600 mt-1 leading-none">
-                {formatCurrency(activeCaixinhasTotal)}
+                {formatCurrency(totalMonthly)}
               </p>
             </div>
             
-            <div className="w-px h-10 bg-slate-100 shrink-0" />
-            
-            <div className="flex-1">
+            <div className="sm:border-l sm:border-slate-100 sm:pl-4">
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Layers size={12} className="text-slate-400" /> 
-                Caixinhas ({caixinhas.length})
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                Ativas ({activeCaixinhas.length})
               </p>
-              <div className="flex items-center gap-3 mt-1.5">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                  <span className="text-xs text-slate-600 font-bold truncate">{caixinhas.filter((c) => c.status === 'Ativo').length}</span>
-                </div>
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
-                  <span className="text-xs text-slate-500 font-bold truncate">{caixinhas.filter((c) => c.status === 'Pausado').length}</span>
-                </div>
-              </div>
+              <p className="text-lg font-black text-emerald-600 mt-1 leading-none">
+                {formatCurrency(activeValue)}
+              </p>
+              <p className="text-[10px] text-slate-500 mt-1.5 font-bold">
+                Aporte: {formatCurrency(activeMonthly)}/mês
+              </p>
+            </div>
+
+            <div className="sm:border-l sm:border-slate-100 sm:pl-4">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0"></span>
+                Pausadas ({pausedCaixinhas.length})
+              </p>
+              <p className="text-lg font-black text-slate-500 mt-1 leading-none">
+                {formatCurrency(pausedValue)}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-1.5 font-bold">
+                Aporte: {formatCurrency(pausedMonthly)}/mês
+              </p>
             </div>
           </div>
         </div>
